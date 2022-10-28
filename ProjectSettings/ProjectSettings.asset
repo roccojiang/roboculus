@@ -88,7 +88,7 @@ PlayerSettings:
   bakeCollisionMeshes: 0
   forceSingleInstance: 0
   useFlipModelSwapchain: 1
-  resizableWindow: 0
+  resizableWindow: 1
   useMacAppStoreValidation: 0
   macAppStoreCategory: public.app-category.games
   gpuSkinning: 1
@@ -99,7 +99,7 @@ PlayerSettings:
   xboxEnableFitness: 0
   visibleInBackground: 1
   allowFullscreenSwitch: 1
-  fullscreenMode: 1
+  fullscreenMode: 3
   xboxSpeechDB: 0
   xboxEnableHeadOrientation: 0
   xboxEnableGuest: 0
@@ -138,10 +138,12 @@ PlayerSettings:
   preloadedAssets:
   - {fileID: 0}
   - {fileID: 0}
-  - {fileID: 11400000, guid: 8eade31296ab441059f677d85f42cd44, type: 2}
-  - {fileID: -7394544553455936000, guid: a1a0b7c424a2045d19cab44f8f9932b6, type: 2}
   - {fileID: 0}
-  - {fileID: 2736784162138836638, guid: ed71ae4d49beb4c22a1eba266af371fe, type: 2}
+  - {fileID: 0}
+  - {fileID: 11400000, guid: 8eade31296ab441059f677d85f42cd44, type: 2}
+  - {fileID: 8220692655015398748, guid: a1a0b7c424a2045d19cab44f8f9932b6, type: 2}
+  - {fileID: 0}
+  - {fileID: 7201085329901810231, guid: ed71ae4d49beb4c22a1eba266af371fe, type: 2}
   metroInputSource: 0
   wsaTransparentSwapchain: 0
   m_HolographicPauseOnTrackingLoss: 1
@@ -171,7 +173,7 @@ PlayerSettings:
   AndroidMinSdkVersion: 23
   AndroidTargetSdkVersion: 0
   AndroidPreferredInstallLocation: 1
-  aotOptions: 
+  aotOptions: nimt-trampolines=1024
   stripEngineCode: 1
   iPhoneStrippingLevel: 0
   iPhoneScriptCallOptimization: 0
