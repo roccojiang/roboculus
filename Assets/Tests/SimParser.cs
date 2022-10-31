@@ -2,9 +2,14 @@
 using System.IO;
 using System.Text;
 using NUnit.Framework;
+using UnityEditor;
+using UnityEngine;
 
 namespace Tests {
 public class SimTestScript {
+  // Number of joints in test cases:
+  private static int Joints => 18;
+
   // Test to see if the robot parser actually works.
   [Test]
   public void TestRobotParser() {
@@ -26,7 +31,7 @@ public class SimTestScript {
 
     // Actually do the parsing.
     Either<string, RobotState> parseResult =
-        RobotState.ParseRobotState(18, testScanner);
+        RobotState.ParseRobotState(Joints, testScanner);
 
     // Check if the result has parsed.
     if (parseResult is Left<string, RobotState> left) {
@@ -51,6 +56,56 @@ public class SimTestScript {
 
     // MemoryStreams don't need to be closed, but just in case...
     testLineStream.Close();
+  }
+
+  // Test to see if the simulation parser can parse successive states from a
+  // file.
+  [Test]
+  public void TestSimulationParser() {
+    // Load the test input.
+    AssetDatabase.ImportAsset("Assets/Resources/SimParserTestInput.txt");
+    TextAsset testInput = Resources.Load<TextAsset>("SimParserTestInput");
+    string testInputString = testInput.text;
+
+    // Make sure it is non-empty.
+    Assert.That(testInputString.Length > 0);
+
+    // Make a secondary scanner for comparisons.
+    using MemoryStream outerStream =
+        new MemoryStream(Encoding.UTF8.GetBytes(testInputString));
+    using (SimulationParser parser = new SimulationParser(
+               18, new MemoryStream(Encoding.UTF8.GetBytes(testInputString)))) {
+      // Set up the parsers.
+      Scanner testScanner = new(outerStream);
+      foreach (RobotState state in parser) {
+        // Test all the values!
+        Assert.AreEqual(state.Position, ParseDoubleTriplet(testScanner));
+        Assert.AreEqual(state.Orientation, ParseDoubleTriplet(testScanner));
+        Assert.AreEqual(state.LinearVelocity, ParseDoubleTriplet(testScanner));
+        Assert.AreEqual(state.AngularVelocity, ParseDoubleTriplet(testScanner));
+
+        for (int i = 0; i < Joints; ++i) {
+          Assert.AreEqual(state.JointPositions[i], ParseDouble(testScanner));
+        }
+
+        for (int i = 0; i < Joints; ++i) {
+          Assert.AreEqual(state.JointVelocities[i], ParseDouble(testScanner));
+        }
+      }
+    }
+  }
+
+  // Helper for parsing doubles with zero safety.
+  private double ParseDouble(Scanner scn) =>
+      scn.ParseNext<double>(double.TryParse).FromRight();
+
+  // Helper for parsing triples of doubles with zero safety.
+  private (double, double, double) ParseDoubleTriplet(Scanner scn) {
+    double x = ParseDouble(scn);
+    double y = ParseDouble(scn);
+    double z = ParseDouble(scn);
+
+    return (x, y, z);
   }
 }
 }
