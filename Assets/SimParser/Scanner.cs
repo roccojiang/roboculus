@@ -8,18 +8,18 @@ namespace SimParser {
 /// Delegate type for any such parser function.
 /// </summary>
 /// <typeparam name="T">Type of thing to parse.</typeparam>
-internal delegate IEither<string, T> Parser<out T>(string input);
+public delegate Either<string, T> Parser<T>(string input);
 
 /// <summary>
 /// Delegate type for any TryParse-like functions.
 /// </summary>
 /// <typeparam name="T">Type of the thing to parse.</typeparam>
-internal delegate bool SafeReader<T>(string input, out T result);
+public delegate bool SafeReader<T>(string input, out T result);
 
 /// <summary>
 /// Token scanner class for C#.
 /// </summary>
-internal class Scanner : StreamReader {
+public class Scanner : StreamReader {
   public Scanner(Stream stream) : base(stream) {}
 
   public Scanner(string path) : base(path) {}
@@ -50,19 +50,19 @@ internal class Scanner : StreamReader {
     return internalBuilder.ToString();
   }
 
-  // Convert a TryParse-like function into an Either-returning parser.
+  // Convert a TryParse-like function into an IEither-returning parser.
   public static Parser<T> ConvertToParser<T>(SafeReader<T> reader) => token => {
     bool success = reader(token, out T result);
 
-    return success ? IEither<string, T>.ToRight(result)
-                   : IEither<string, T>.ToLeft("Unexpected Token: " + token);
+    return success ? Either<string, T>.ToRight(result)
+                   : Either<string, T>.ToLeft("Unexpected Token: " + token);
   };
 
   // Parses a parsable token into something, or returns the token if it fails.
-  public IEither<string, T>
+  public Either<string, T>
   ParseNext<T>(Parser<T> parser) => parser(NextToken());
 
-  public IEither<string, T>
+  public Either<string, T>
   ParseNext<T>(SafeReader<T> reader) => ParseNext(ConvertToParser(reader));
 }
 }

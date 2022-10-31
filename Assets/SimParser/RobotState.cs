@@ -10,8 +10,7 @@ namespace SimParser {
 public struct RobotState {
   public (double x, double y, double z) Position { get; private set; }
 
-  public (double i, double j, double k, double w) Orientation { get;
-                                                                private set; }
+  public (double i, double j, double k) Orientation { get; private set; }
 
   public (double lvx, double lvy, double lvz) LinearVelocity { get;
                                                                private set; }
@@ -20,26 +19,20 @@ public struct RobotState {
                                                                 private set; }
 
   // All of these must be the same length.
-  public List<(double x, double y, double z)> JointPositions { get;
-                                                               private set; }
+  public List<double> JointPositions { get; private set; }
 
-  public List<(double vx, double vy, double vz)> JointVelocities {
-      get; private set; }
+  public List<double> JointVelocities { get; private set; }
 
   // The parser for robot states.
-  private static IEither<string, double>
+  private static Either<string, double>
   ParseDouble(Scanner scn) => scn.ParseNext<double>(double.TryParse);
 
-  private static IEither<string, (double x, double y, double z)>
+  private static Either<string, (double x, double y, double z)>
   ParseCoordTriple(Scanner scn) =>
       ParseDouble(scn)
           .FlatMap(x => ParseDouble(scn).Map(y => (x, y)))
           .FlatMap(coords => ParseDouble(scn).Map(z => (coords.x, coords.y,
                                                         z)));
-
-  private static IEither<string, (double i, double j, double k, double w)>
-  ParseCoordQuadruple(Scanner scn) => ParseCoordTriple(scn).FlatMap(
-      coords => ParseDouble(scn).Map(w => (coords.x, coords.y, coords.z, w)));
 
   /// <summary>
   /// Parse a robot's state from a scanner, given the number of joints it has to
@@ -49,18 +42,16 @@ public struct RobotState {
   /// <param name="scn">The stream Scanner to read the state from.</param>
   /// <returns>A robot state, or a token error otherwise.</returns>
   // According to hexapod_env.py, the ordering should be...
-  internal static IEither<string, RobotState> ParseRobotState(int joints,
-                                                              Scanner scn) {
+  public static Either<string, RobotState> ParseRobotState(int joints,
+                                                           Scanner scn) {
     // Pre-initialise the robot state object.
-    RobotState state = new RobotState {
-      JointPositions = new List<(double x, double y, double z)>(),
-      JointVelocities = new List<(double vx, double vy, double vz)>()
-    };
+    RobotState state = new RobotState { JointPositions = new List<double>(),
+                                        JointVelocities = new List<double>() };
 
     return ParseCoordTriple(scn)
         .FlatMap(pos => {
           state.Position = pos;
-          return ParseCoordQuadruple(scn);
+          return ParseCoordTriple(scn);
         })
         .FlatMap(ori => {
           state.Orientation = ori;
@@ -74,21 +65,20 @@ public struct RobotState {
           state.AngularVelocity = av;
           return Enumerable.Range(0, joints)
               .Select(
-                  _ => ParseCoordTriple(scn))
+                  _ => ParseDouble(scn))
               .Sequence();
         })
         .FlatMap(jps => {
           state.JointPositions.AddRange(jps);
           return Enumerable.Range(0, joints)
               .Select(
-                  _ => ParseCoordTriple(scn))
+                  _ => ParseDouble(scn))
               .Sequence();
         })
         .FlatMap(jvs => {
           state.JointVelocities.AddRange(jvs);
-          return IEither<string, RobotState>.ToRight(state);
+          return Either<string, RobotState>.ToRight(state);
         });
   }
 }
-
 }

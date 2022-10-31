@@ -7,44 +7,44 @@ namespace SimParser {
 /// </summary>
 /// <typeparam name="L">Left (usually error) type.</typeparam>
 /// <typeparam name="R">Right (usually success / result) type.</typeparam>
-internal interface IEither<L, out R> {
+public abstract class Either<L, R> {
   /// <summary>
   /// Get a value from a Left.
   /// </summary>
   /// <returns>The item if this is a Left. Throws an exception
   /// otherwise.</returns>
-  public L FromLeft();
+  public abstract L FromLeft();
 
   /// <summary>
   /// Get a value from a Right.
   /// </summary>
   /// <returns>The item if this is a Right. Throws an exception
   /// otherwise.</returns>
-  public R FromRight();
+  public abstract R FromRight();
 
   /// <summary>
   /// Is this a Left?
   /// </summary>
-  public bool IsLeft();
+  public abstract bool IsLeft();
 
   /// <summary>
   /// Is this a Right?
   /// </summary>
-  public bool IsRight();
+  public abstract bool IsRight();
 
   /// <summary>
   /// Make a Left from an item.
   /// </summary>
   /// <param name="item">Item to hold inside.</param>
   /// <returns>The created Left instance.</returns>
-  public static IEither<L, R> ToLeft(L item) => new Left<L, R>(item);
+  public static Either<L, R> ToLeft(L item) => new Left<L, R>(item);
 
   /// <summary>
   /// Make a Right from an item.
   /// </summary>
   /// <param name="item">Item to hold inside.</param>
   /// <returns>The created Right instance.</returns>
-  public static IEither<L, R> ToRight(R item) => new Right<L, R>(item);
+  public static Either<L, R> ToRight(R item) => new Right<L, R>(item);
 
   /// <summary>
   /// Maps the item in an Either, only if this is a Right instance.
@@ -56,7 +56,7 @@ internal interface IEither<L, out R> {
   /// otherwise.</returns> <exception cref="InvalidCastException">If the
   /// subclass is not Left or Right.</exception>
   // Considering that R is a phantom type in Left, it should be fine to cast.
-  public IEither<L, S> Map<S>(Func<R, S> fn) {
+  public Either<L, S> Map<S>(Func<R, S> fn) {
     return this switch { Left<L, R> left => new Left<L, S>(left.FromLeft()),
                          Right<L, R> right =>
                              new Right<L, S>(fn(right.FromRight())),
@@ -73,7 +73,7 @@ internal interface IEither<L, out R> {
   /// <returns>The mapped Right if this is a Right, returns a casted Left
   /// otherwise.</returns> <exception cref="InvalidCastException">If the
   /// subclass is not Left or Right.</exception>
-  public IEither<L, S> Apply<S>(IEither<L, Func<R, S>> fn) {
+  public Either<L, S> Apply<S>(Either<L, Func<R, S>> fn) {
     return (fn, this) switch {
       (Left<L, Func<R, S>> le, not null) => new Left<L, S>(le.FromLeft()),
       (Right<L, Func<R, S>> rf, not null) => Map(rf.FromRight()),
@@ -92,7 +92,7 @@ internal interface IEither<L, out R> {
   /// otherwise.</returns> <exception cref="InvalidCastException">If the
   /// subclass is not Left or Right.</exception>
   // See comment on FlatMap.
-  public IEither<L, S> FlatMap<S>(Func<R, IEither<L, S>> fn) {
+  public Either<L, S> FlatMap<S>(Func<R, Either<L, S>> fn) {
     return this switch { Left<L, R> left => new Left<L, S>(left.FromLeft()),
                          Right<L, R> right => fn(right.FromRight()),
                          _ => throw new InvalidCastException(
@@ -100,29 +100,28 @@ internal interface IEither<L, out R> {
   }
 }
 
-internal static class EitherExtensions {
+public static class EitherExtensions {
   // Sequence a list of Either actions together.
-  public static IEither<L, IEnumerable<R>> Sequence<L, R>(
-      this IEnumerable<IEither<L, R>> actions) => actions.Traverse(x => x);
+  public static Either<L, IEnumerable<R>> Sequence<L, R>(
+      this IEnumerable<Either<L, R>> actions) => actions.Traverse(x => x);
 
   // Traverse over a list, while evaluating Either actions.
-  public static IEither<L, IEnumerable<R>>
-  Traverse<L, R, T>(this IEnumerable<T> inputs,
-                    Func<T, IEither<L, R>> process) {
+  public static Either<L, IEnumerable<R>>
+  Traverse<L, R, T>(this IEnumerable<T> inputs, Func<T, Either<L, R>> process) {
     List<R> result = new();
 
     foreach (T input in inputs) {
-      IEither<L, R> action = process(input);
+      Either<L, R> action = process(input);
 
       if (action is Left<L, R> left)
-        return new Left<L, List<R>>(left.FromLeft());
+        return new Left<L, IEnumerable<R>>(left.FromLeft());
       else if (action is Right<L, R> right)
         result.Add(right.FromRight());
       else
         throw new InvalidCastException("This is not a valid Either subclass!");
     }
 
-    return IEither<L, IEnumerable<R>>.ToRight(result);
+    return Either<L, IEnumerable<R>>.ToRight(result);
   }
 }
 
@@ -132,18 +131,19 @@ internal static class EitherExtensions {
 /// <typeparam name="L">Left (usually error) type.</typeparam>
 /// <typeparam name="R">Right (usually success / result) type. A phantom type in
 /// this case.</typeparam>
-internal sealed class Left<L, R> : IEither<L, R> {
+public sealed class Left<L, R> : Either<L, R> {
   private L LeftItem { get; }
 
   public Left(L leftItem) { LeftItem = leftItem; }
 
-  public L FromLeft() => LeftItem;
+  public override L FromLeft() => LeftItem;
 
-  public R FromRight() => throw new InvalidCastException("This is a Left!");
+  public override
+      R FromRight() => throw new InvalidCastException("This is a Left!");
 
-  public bool IsLeft() => true;
+  public override bool IsLeft() => true;
 
-  public bool IsRight() => false;
+  public override bool IsRight() => false;
 }
 
 /// <summary>
@@ -152,17 +152,18 @@ internal sealed class Left<L, R> : IEither<L, R> {
 /// <typeparam name="L">Left (usually error) type. A phantom type in this
 /// case.</typeparam> <typeparam name="R">Right (usually success / result)
 /// type.</typeparam>
-internal sealed class Right<L, R> : IEither<L, R> {
+public sealed class Right<L, R> : Either<L, R> {
   private R RightItem { get; }
 
   public Right(R rightItem) { RightItem = rightItem; }
 
-  public L FromLeft() => throw new InvalidCastException("This is a Right!");
+  public override
+      L FromLeft() => throw new InvalidCastException("This is a Right!");
 
-  public R FromRight() => RightItem;
+  public override R FromRight() => RightItem;
 
-  public bool IsLeft() => true;
+  public override bool IsLeft() => true;
 
-  public bool IsRight() => false;
+  public override bool IsRight() => false;
 }
 }
