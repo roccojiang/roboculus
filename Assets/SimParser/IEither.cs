@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace SimParser {
 /// <summary>
@@ -99,6 +100,32 @@ internal interface IEither<L, out R> {
   }
 }
 
+internal static class EitherExtensions {
+  // Sequence a list of Either actions together.
+  public static IEither<L, IEnumerable<R>> Sequence<L, R>(
+      this IEnumerable<IEither<L, R>> actions) => actions.Traverse(x => x);
+
+  // Traverse over a list, while evaluating Either actions.
+  public static IEither<L, IEnumerable<R>>
+  Traverse<L, R, T>(this IEnumerable<T> inputs,
+                    Func<T, IEither<L, R>> process) {
+    List<R> result = new();
+
+    foreach (T input in inputs) {
+      IEither<L, R> action = process(input);
+
+      if (action is Left<L, R> left)
+        return new Left<L, List<R>>(left.FromLeft());
+      else if (action is Right<L, R> right)
+        result.Add(right.FromRight());
+      else
+        throw new InvalidCastException("This is not a valid Either subclass!");
+    }
+
+    return IEither<L, IEnumerable<R>>.ToRight(result);
+  }
+}
+
 /// <summary>
 /// Left type of Either.
 /// </summary>
@@ -138,5 +165,4 @@ internal sealed class Right<L, R> : IEither<L, R> {
 
   public bool IsRight() => false;
 }
-
 }

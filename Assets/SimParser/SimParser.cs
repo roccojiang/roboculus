@@ -1,4 +1,3 @@
 namespace SimParser {
-// First assumption: all data are floats.
-
+// Nothing here at the moment.
 }
