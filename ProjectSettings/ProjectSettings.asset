@@ -8,7 +8,7 @@ PlayerSettings:
   AndroidProfiler: 0
   AndroidFilterTouchesWhenObscured: 0
   AndroidEnableSustainedPerformanceMode: 0
-  defaultScreenOrientation: 4
+  defaultScreenOrientation: 3
   targetDevice: 2
   useOnDemandResources: 0
   accelerometerFrequency: 60
@@ -140,10 +140,10 @@ PlayerSettings:
   - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}
-  - {fileID: 11400000, guid: 8eade31296ab441059f677d85f42cd44, type: 2}
-  - {fileID: 8220692655015398748, guid: a1a0b7c424a2045d19cab44f8f9932b6, type: 2}
   - {fileID: 0}
-  - {fileID: 7201085329901810231, guid: ed71ae4d49beb4c22a1eba266af371fe, type: 2}
+  - {fileID: 0}
+  - {fileID: 11400000, guid: 8eade31296ab441059f677d85f42cd44, type: 2}
+  - {fileID: 2736784162138836638, guid: ed71ae4d49beb4c22a1eba266af371fe, type: 2}
   metroInputSource: 0
   wsaTransparentSwapchain: 0
   m_HolographicPauseOnTrackingLoss: 1
@@ -164,6 +164,7 @@ PlayerSettings:
   androidMaxAspectRatio: 2.1
   applicationIdentifier:
     Android: com.SEGP.RobotVisualiser
+    Standalone: com.SEGP.RobotVisualiser
   buildNumber:
     Standalone: 0
     iPhone: 0
@@ -172,7 +173,7 @@ PlayerSettings:
   AndroidBundleVersionCode: 1
   AndroidMinSdkVersion: 23
   AndroidTargetSdkVersion: 0
-  AndroidPreferredInstallLocation: 1
+  AndroidPreferredInstallLocation: 0
   aotOptions: nimt-trampolines=1024
   stripEngineCode: 1
   iPhoneStrippingLevel: 0
