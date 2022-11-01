@@ -165,8 +165,8 @@ public sealed class Right<L, R> : Either<L, R> {
 
   public override R FromRight() => RightItem;
 
-  public override bool IsLeft() => true;
+  public override bool IsLeft() => false;
 
-  public override bool IsRight() => false;
+  public override bool IsRight() => true;
 }
 }

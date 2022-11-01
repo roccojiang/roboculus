@@ -2,6 +2,8 @@
 using System.IO;
 using System.Text;
 using NUnit.Framework;
+using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
 using UnityEngine;
 
@@ -76,7 +78,11 @@ public class SimTestScript {
     using SimulationParser parser =
         new(Joints, new MemoryStream(Encoding.UTF8.GetBytes(testInputString)));
 
-    foreach (RobotState state in parser) {
+    // Make sure that it actually finds states.
+    List<RobotState> states = parser.ToList();
+    Assert.That(states.Count > 0);
+
+    foreach (RobotState state in states) {
       // Test all the values!
       Assert.AreEqual(state.Position, ParseDoubleTriplet(testScanner));
       Assert.AreEqual(state.Orientation, ParseDoubleTriplet(testScanner));
