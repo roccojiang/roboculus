@@ -39,7 +39,7 @@ public class SimulationParser : IEnumerable<RobotState>, IDisposable {
     Consumed = true;
 
     // Consume all robot states from file.
-    Scanner fileScanner = new Scanner(FileStream);
+    Scanner fileScanner = new(FileStream);
     Either<string, RobotState> result =
         RobotState.ParseRobotState(Joints, fileScanner);
 

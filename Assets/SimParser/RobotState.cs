@@ -48,6 +48,7 @@ public struct RobotState {
     RobotState state = new() { JointPositions = new List<double>(),
                                JointVelocities = new List<double>() };
 
+    // Parse state components one-by-one and insert into local copy of state.
     return ParseCoordTriple(scn)
         .FlatMap(pos => {
           state.Position = pos;
