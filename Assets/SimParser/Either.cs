@@ -113,12 +113,15 @@ public static class EitherExtensions {
     foreach (T input in inputs) {
       Either<L, R> action = process(input);
 
-      if (action is Left<L, R> left)
+      switch (action) {
+      case Left<L, R> left:
         return new Left<L, IEnumerable<R>>(left.FromLeft());
-      else if (action is Right<L, R> right)
+      case Right<L, R> right:
         result.Add(right.FromRight());
-      else
+        break;
+      default:
         throw new InvalidCastException("This is not a valid Either subclass!");
+      }
     }
 
     return Either<L, IEnumerable<R>>.ToRight(result);
