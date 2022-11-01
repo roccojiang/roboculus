@@ -45,8 +45,8 @@ public struct RobotState {
   public static Either<string, RobotState> ParseRobotState(int joints,
                                                            Scanner scn) {
     // Pre-initialise the robot state object.
-    RobotState state = new RobotState { JointPositions = new List<double>(),
-                                        JointVelocities = new List<double>() };
+    RobotState state = new() { JointPositions = new List<double>(),
+                               JointVelocities = new List<double>() };
 
     return ParseCoordTriple(scn)
         .FlatMap(pos => {
