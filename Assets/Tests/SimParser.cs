@@ -70,27 +70,25 @@ public class SimTestScript {
     // Make sure it is non-empty.
     Assert.That(testInputString.Length > 0);
 
-    // Make a secondary scanner for comparisons.
-    using MemoryStream outerStream =
-        new MemoryStream(Encoding.UTF8.GetBytes(testInputString));
-    using (SimulationParser parser = new SimulationParser(
-               18, new MemoryStream(Encoding.UTF8.GetBytes(testInputString)))) {
-      // Set up the parsers.
-      Scanner testScanner = new(outerStream);
-      foreach (RobotState state in parser) {
-        // Test all the values!
-        Assert.AreEqual(state.Position, ParseDoubleTriplet(testScanner));
-        Assert.AreEqual(state.Orientation, ParseDoubleTriplet(testScanner));
-        Assert.AreEqual(state.LinearVelocity, ParseDoubleTriplet(testScanner));
-        Assert.AreEqual(state.AngularVelocity, ParseDoubleTriplet(testScanner));
+    // Make a secondary scanner for comparisons and set up the main parser.
+    using Scanner testScanner =
+        new(new MemoryStream(Encoding.UTF8.GetBytes(testInputString)));
+    using SimulationParser parser =
+        new(18, new MemoryStream(Encoding.UTF8.GetBytes(testInputString)));
 
-        for (int i = 0; i < Joints; ++i) {
-          Assert.AreEqual(state.JointPositions[i], ParseDouble(testScanner));
-        }
+    foreach (RobotState state in parser) {
+      // Test all the values!
+      Assert.AreEqual(state.Position, ParseDoubleTriplet(testScanner));
+      Assert.AreEqual(state.Orientation, ParseDoubleTriplet(testScanner));
+      Assert.AreEqual(state.LinearVelocity, ParseDoubleTriplet(testScanner));
+      Assert.AreEqual(state.AngularVelocity, ParseDoubleTriplet(testScanner));
 
-        for (int i = 0; i < Joints; ++i) {
-          Assert.AreEqual(state.JointVelocities[i], ParseDouble(testScanner));
-        }
+      for (int i = 0; i < Joints; ++i) {
+        Assert.AreEqual(state.JointPositions[i], ParseDouble(testScanner));
+      }
+
+      for (int i = 0; i < Joints; ++i) {
+        Assert.AreEqual(state.JointVelocities[i], ParseDouble(testScanner));
       }
     }
   }
