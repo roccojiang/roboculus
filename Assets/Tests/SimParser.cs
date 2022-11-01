@@ -74,7 +74,7 @@ public class SimTestScript {
     using Scanner testScanner =
         new(new MemoryStream(Encoding.UTF8.GetBytes(testInputString)));
     using SimulationParser parser =
-        new(18, new MemoryStream(Encoding.UTF8.GetBytes(testInputString)));
+        new(Joints, new MemoryStream(Encoding.UTF8.GetBytes(testInputString)));
 
     foreach (RobotState state in parser) {
       // Test all the values!
