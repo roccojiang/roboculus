@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 using System.Text;
 
 namespace SimParser {
@@ -22,6 +23,8 @@ public class Scanner : StreamReader {
 
   public Scanner(string path) : base(path) {}
 
+  private Stack<char> _pushbackBuffer = new();
+
   /// <summary>
   /// Read the next whitespace-separated token from the stream.
   /// NOTE: Not thread safe!
@@ -30,7 +33,7 @@ public class Scanner : StreamReader {
     StringBuilder internalBuilder = new StringBuilder();
 
     do {
-      int next = Read();
+      int next = _pushbackBuffer.Count > 0 ? _pushbackBuffer.Pop() : Read();
 
       // No more chars.
       if (next < 0)
@@ -39,8 +42,25 @@ public class Scanner : StreamReader {
       char nextChar = (char)next;
 
       // If end of token, break. Otherwise add to builder.
-      if (char.IsWhiteSpace(nextChar))
+      if (char.IsWhiteSpace(nextChar)) {
+        next = Read();
+
+        // While there are still more characters left in the stream,
+        // consume all whitespace until the next non-whitespace
+        // character.
+        // Then push that character into the pushback buffer.
+        while (next > 0) {
+          nextChar = (char)next;
+          if (!char.IsWhiteSpace(nextChar)) {
+            _pushbackBuffer.Push(nextChar);
+            break;
+          }
+
+          next = Read();
+        }
+
         break;
+      }
 
       internalBuilder.Append(nextChar);
     } while (true);
