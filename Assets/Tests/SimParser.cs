@@ -99,9 +99,13 @@ public class SimTestScript {
     }
   }
 
+  // Cached double parser for better test performance.
+  private readonly Parser<double> _doubleParser =
+      Scanner.ConvertToParser<double>(double.TryParse);
+
   // Helper for parsing doubles with zero safety.
-  private double ParseDouble(Scanner scn) =>
-      scn.ParseNext<double>(double.TryParse).FromRight();
+  private double
+  ParseDouble(Scanner scn) => scn.ParseNext(_doubleParser).FromRight();
 
   // Helper for parsing triples of doubles with zero safety.
   private (double, double, double) ParseDoubleTriplet(Scanner scn) {

@@ -11,9 +11,9 @@ public class RobotControl : MonoBehaviour {
 
   public int jointCount;
   public string simulationFilepath;
-  public float stiffness = 10000;
+  public float stiffness = 1;
   public float damping = 0;
-  public float forceLimit = 100000;
+  public float forceLimit = float.MaxValue;
 
   void Start() {
     // Set up chain.

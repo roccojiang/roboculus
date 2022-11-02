@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text;
 
@@ -23,14 +24,14 @@ public class Scanner : StreamReader {
 
   public Scanner(string path) : base(path) {}
 
-  private Stack<char> _pushbackBuffer = new();
+  private readonly Stack<char> _pushbackBuffer = new();
 
   /// <summary>
   /// Read the next whitespace-separated token from the stream.
   /// NOTE: Not thread safe!
   /// </summary>
   public string NextToken() {
-    StringBuilder internalBuilder = new StringBuilder();
+    StringBuilder internalBuilder = new();
 
     do {
       int next = _pushbackBuffer.Count > 0 ? _pushbackBuffer.Pop() : Read();
@@ -43,22 +44,7 @@ public class Scanner : StreamReader {
 
       // If end of token, break. Otherwise add to builder.
       if (char.IsWhiteSpace(nextChar)) {
-        next = Read();
-
-        // While there are still more characters left in the stream,
-        // consume all whitespace until the next non-whitespace
-        // character.
-        // Then push that character into the pushback buffer.
-        while (next > 0) {
-          nextChar = (char)next;
-          if (!char.IsWhiteSpace(nextChar)) {
-            _pushbackBuffer.Push(nextChar);
-            break;
-          }
-
-          next = Read();
-        }
-
+        ConsumeWhitespace();
         break;
       }
 
@@ -66,6 +52,26 @@ public class Scanner : StreamReader {
     } while (true);
 
     return internalBuilder.ToString();
+  }
+
+  // Consume remaining whitespace until the next non-whitespace character
+  // in the stream.
+  private void ConsumeWhitespace() {
+    int next = Read();
+
+    // While there are still more characters left in the stream,
+    // consume all whitespace until the next non-whitespace
+    // character.
+    // Then push that character into the pushback buffer.
+    while (next > 0) {
+      char nextChar = (char)next;
+      if (!char.IsWhiteSpace(nextChar)) {
+        _pushbackBuffer.Push(nextChar);
+        return;
+      }
+
+      next = Read();
+    }
   }
 
   // Convert a TryParse-like function into an IEither-returning parser.
@@ -80,6 +86,9 @@ public class Scanner : StreamReader {
   public Either<string, T>
   ParseNext<T>(Parser<T> parser) => parser(NextToken());
 
+  // Overload for ParseNext used for testing.
+  [Obsolete(
+      "Use the other ParseNext overload with a cached Parser instead for better performance.")]
   public Either<string, T>
   ParseNext<T>(SafeReader<T> reader) => ParseNext(ConvertToParser(reader));
 }
