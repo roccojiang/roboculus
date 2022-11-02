@@ -38,7 +38,7 @@ public class RobotControl : MonoBehaviour {
     SimulationParser parser = new(jointCount, simulationFilepath);
     _robotStates = parser.GetEnumerator();
   }
-  void Update() {
+  void FixedUpdate() {
     if (!_robotStates.MoveNext())
       return;
 
