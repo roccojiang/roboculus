@@ -23,9 +23,13 @@ public struct RobotState {
 
   public List<double> JointVelocities { get; private set; }
 
+  // Cached double parser, so the conversion isn't done repeatedly.
+  private static readonly Parser<double> DoubleParser =
+      Scanner.ConvertToParser<double>(double.TryParse);
+
   // The parser for robot states.
   private static Either<string, double>
-  ParseDouble(Scanner scn) => scn.ParseNext<double>(double.TryParse);
+  ParseDouble(Scanner scn) => scn.ParseNext(DoubleParser);
 
   private static Either<string, (double x, double y, double z)>
   ParseCoordTriple(Scanner scn) =>
