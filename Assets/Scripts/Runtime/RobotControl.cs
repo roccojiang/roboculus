@@ -7,6 +7,7 @@ using UnityEngine;
 namespace Runtime {
 public class RobotControl : MonoBehaviour {
   private List<(ArticulationBody body, JointControl jc)> _articulationChain;
+  private ArticulationBody _selfBody;
   private IEnumerator<RobotState> _robotStates;
 
   public int jointCount;
@@ -16,6 +17,9 @@ public class RobotControl : MonoBehaviour {
   public float forceLimit = float.MaxValue;
 
   void Start() {
+    // Get own ArticulationBody.
+    _selfBody = transform.Find("base_link").GetComponent<ArticulationBody>();
+
     // Set up chain.
     ArticulationBody[] chain = GetComponentsInChildren<ArticulationBody>();
 
@@ -38,6 +42,7 @@ public class RobotControl : MonoBehaviour {
     SimulationParser parser = new(jointCount, simulationFilepath);
     _robotStates = parser.GetEnumerator();
   }
+
   void FixedUpdate() {
     if (!_robotStates.MoveNext())
       return;
@@ -48,8 +53,18 @@ public class RobotControl : MonoBehaviour {
     // Update pose
     UpdatePose(nextPose.JointPositions.Select(d => (float)d).AsReadOnlyList());
 
-    // TODO: Update location
-    // UpdateLocation(nextPose.location);
+    // Update location
+    UpdateLocation(nextPose.Position, nextPose.Orientation);
+  }
+
+  private void UpdateLocation((double, double, double)nextPosition,
+                              (double, double, double)nextRotation) {
+    (double x, double y, double z) = nextPosition;
+    (double i, double j, double k) = nextRotation;
+
+    _selfBody.TeleportRoot(
+        new Vector3((float)x, (float)z, (float)y),
+        Quaternion.Euler((float)i, (float)k + 90f, (float)j));
   }
 
   private void UpdatePose(IList<float> jointPositions) {
