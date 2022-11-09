@@ -64,7 +64,7 @@ public class RobotControl : MonoBehaviour {
 
     _selfBody.TeleportRoot(
         new Vector3((float)x, (float)z, (float)y),
-        Quaternion.Euler((float)i, (float)k + 90f, (float)j));
+        Quaternion.Euler((float)i, (float)k - 90f, (float)j));
   }
 
   private void UpdatePose(IList<float> jointPositions) {
