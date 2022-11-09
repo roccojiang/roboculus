@@ -17,8 +17,9 @@ public class JointControl : MonoBehaviour {
   void FixedUpdate() {
     ArticulationDrive drive = joint.xDrive;
 
-    float targetPosition =
-        Mathf.Lerp(drive.lowerLimit, drive.upperLimit, (position + 1f) / 2f);
+    // IT IS IN RADIANS!
+    float targetPosition = Mathf.Lerp(drive.lowerLimit, drive.upperLimit,
+                                      (position + (Mathf.PI / 2f)) / Mathf.PI);
     drive.target = targetPosition;
 
     joint.xDrive = drive;
