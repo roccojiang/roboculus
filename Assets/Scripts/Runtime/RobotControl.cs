@@ -15,6 +15,7 @@ public class RobotControl : MonoBehaviour {
   public float stiffness = 1;
   public float damping = 0;
   public float forceLimit = float.MaxValue;
+  public bool runSimulationFile = true;
 
   void Start() {
     // Get own ArticulationBody.
@@ -39,17 +40,22 @@ public class RobotControl : MonoBehaviour {
         chain.Select(c => (c, c.GetComponent<JointControl>())).ToList();
 
     // Get the robot state parser.
-    SimulationParser parser = new(jointCount, simulationFilepath);
-    _robotStates = parser.GetEnumerator();
+    if (runSimulationFile) {
+      SimulationParser parser = new(jointCount, simulationFilepath);
+      _robotStates = parser.GetEnumerator();
+    }
   }
 
   void FixedUpdate() {
-    if (!_robotStates.MoveNext())
+    if (!runSimulationFile || !_robotStates.MoveNext())
       return;
 
     // Get next pose from sim parser.
     RobotState nextPose = _robotStates.Current;
+    SetState(nextPose);
+  }
 
+  public void SetState(RobotState nextPose) {
     // Update pose
     UpdatePose(nextPose.JointPositions.Select(d => (float)d).AsReadOnlyList());
 

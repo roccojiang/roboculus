@@ -1,81 +1,76 @@
+using SimParser;
 using System;
 using System.Threading;
 using System.Net;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Net.Sockets;
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 
+namespace Runtime {
 public class Server : MonoBehaviour {
-  private const int PORT = 5001;
-  private readonly string LOCAL_ADDR = GetLocalIPAddress();
-  private bool _isFull;
-  private int _buffIndex;
-  private ArrayList _buffer;
+  public int port = 5001;
+
+  private readonly string LOCAL_ADDR = "127.0.0.1"; // GetLocalIPAddress();
+  private IEnumerator<RobotState> _states;
+  private ConcurrentQueue<RobotState> _buffer;
+  private RobotControl _control;
 
   // Start is called before the first frame update
   void Start() {
-    _isFull = false;
-    _buffIndex = 0;
-    _buffer = new ArrayList();
-    Thread thread = new Thread(AcceptRobotStateData);
+    _control = GetComponent<RobotControl>();
+    _buffer = new ConcurrentQueue<RobotState>();
+
+    Thread thread = new(AcceptRobotStateData);
     thread.Start();
   }
 
   // Update is called once per frame
-  void Update() {
+  void FixedUpdate() {
     // if there is data, read it
-    if (_buffIndex < _buffer.Count) {
-      var data = _buffer[_buffIndex];
-      print(data);
-      transform.GetComponent<ArticulationBody>().TeleportRoot(
-          Vector3.forward * 0.5f, transform.rotation); //(double) data);
-      _buffIndex++;
-    }
-
-    // Flush the _buffer when it's full and we finished reading from it
-    if (_isFull && _buffIndex >= _buffer.Count) {
-      print("Flushing the _buffer");
-      _buffer.Clear();
-      _buffIndex = 0;
-      _isFull = false;
+    if (_buffer.TryDequeue(out RobotState data)) {
+      // print(data);
+      _control.SetState(data);
     }
   }
 
   // Runs a server, connects a client, gets data from the client,
   // writes to the _buffer (global ArrayList)
   private void AcceptRobotStateData() {
-    TcpListener server = null;
+    TcpListener server = new(IPAddress.Parse(LOCAL_ADDR), port);
     try {
-      server = new TcpListener(IPAddress.Parse(LOCAL_ADDR), PORT);
-
       server.Start();
-      int nextByte;
-      print("Server has started on " + LOCAL_ADDR + ":" + PORT);
+      // int nextByte;
+      print("Server has started on " + LOCAL_ADDR + ":" + port);
 
       while (true) {
         print("Waiting for a client connection");
-        TcpClient client = server.AcceptTcpClient();
+        TcpClient currentClient = server.AcceptTcpClient();
+        NetworkStream currentStream = currentClient.GetStream();
         print("A client is connected.");
 
-        if (!_isFull) {
-          // Get a stream object for reading and writing
-          NetworkStream stream = client.GetStream();
-          string coordinate = "";
-          while ((nextByte = stream.ReadByte()) != -1) {
-            if (nextByte == ' ') {
-              _buffer.Add(double.Parse(coordinate));
-              coordinate = "";
-            } else {
-              coordinate += (char)nextByte;
-            }
-          }
-          // Parsing the last coordinate
-          _buffer.Add(double.Parse(coordinate));
-          _isFull = true;
+        IEnumerator<RobotState> states =
+            new SimulationParser(_control.jointCount, currentStream)
+                .GetEnumerator();
+        bool hasRead = false;
+
+        // Keep the connection alive until a state is read.
+        while (!hasRead) {
+          hasRead = states.MoveNext();
         }
-        client.Close();
-        print("Client is disconnected");
+
+        // TODO: Need a way to exit out of this loop when states are exhausted.
+        //       Issue is that at the moment, the Scanner blocks if no
+        //       characters remain, even if
+        do {
+          _buffer.Enqueue(states.Current);
+        } while (states.MoveNext());
+
+        states.Dispose();
+        currentClient.Close();
+        print("A connection is closed.");
       }
     } catch (SocketException e) {
       print("SocketException: " + e);
@@ -91,7 +86,9 @@ public class Server : MonoBehaviour {
         return ip.ToString();
       }
     }
-    throw new System.Exception(
+
+    throw new Exception(
         "No network adapters with an IPv4 address in the system!");
   }
+}
 }
