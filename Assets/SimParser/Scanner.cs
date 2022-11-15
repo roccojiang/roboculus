@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net.Sockets;
 using System.Text;
 
 namespace SimParser {
@@ -34,11 +35,22 @@ public class Scanner : StreamReader {
     StringBuilder internalBuilder = new();
 
     do {
+      // Cannot read anymore.
+      if (EndOfStream)
+        break;
+      // XXX: This is a very hacky fix! Please replace with a proper check!
+      if (BaseStream is NetworkStream { DataAvailable : false })
+        break;
+
       int next = _pushbackBuffer.Count > 0 ? _pushbackBuffer.Pop() : Read();
 
       // No more chars.
       if (next < 0)
         break;
+
+      // No extended ASCII or unicode allowed:
+      if (next >= 127)
+        continue;
 
       char nextChar = (char)next;
 

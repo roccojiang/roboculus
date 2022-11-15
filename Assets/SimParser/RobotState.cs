@@ -38,6 +38,10 @@ public struct RobotState {
           .FlatMap(coords => ParseDouble(scn).Map(z => (coords.x, coords.y,
                                                         z)));
 
+  public override string ToString() {
+    return $"RobotState [{nameof(Position)}: {Position}, {nameof(Orientation)}: {Orientation}, {nameof(LinearVelocity)}: {LinearVelocity}, {nameof(AngularVelocity)}: {AngularVelocity}, {nameof(JointPositions)}: {string.Join(", ", JointPositions)}, {nameof(JointVelocities)}: {string.Join(", ", JointVelocities)}]";
+  }
+
   /// <summary>
   /// Parse a robot's state from a scanner, given the number of joints it has to
   /// have.
