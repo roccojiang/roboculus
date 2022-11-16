@@ -7852,6 +7852,7 @@ GameObject:
   - component: {fileID: 1584163106}
   - component: {fileID: 1584163105}
   - component: {fileID: 1584163107}
+  - component: {fileID: 1584163108}
   m_Layer: 0
   m_Name: hexapod
   m_TagString: robot
@@ -7904,11 +7905,24 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1e9333c8cf9bada43a98112e97ef4e22, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  jointCount: 0
+  jointCount: 18
   simulationFilepath: 
-  stiffness: 1
+  stiffness: 100000
   damping: 0
   forceLimit: 3.4028235e+38
+  runSimulationFile: 0
+--- !u!114 &1584163108
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1584163103}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 7ed6b7c3a702d4ea7a147f5a93c94f20, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1584814981
 GameObject:
   m_ObjectHideFlags: 0
@@ -8068,7 +8082,6 @@ GameObject:
   - component: {fileID: 1628788649}
   - component: {fileID: 1628788648}
   - component: {fileID: 1628788651}
-  - component: {fileID: 1628788652}
   m_Layer: 0
   m_Name: base_link
   m_TagString: Untagged
@@ -8195,18 +8208,6 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 0.1, y: 0.1, z: 0.1}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &1628788652
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1628788646}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 7ed6b7c3a702d4ea7a147f5a93c94f20, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &1638122532
 GameObject:
   m_ObjectHideFlags: 8

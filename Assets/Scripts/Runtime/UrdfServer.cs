@@ -14,18 +14,19 @@ public class UrdfServer : MonoBehaviour {
   private readonly string LOCAL_ADDR = GetLocalIPAddress();
 
   private bool _isFull;
+  private string applicationDataStore;
 
   // Start is called before the first frame update
   void Start() {
-    Thread thread =
-        new Thread(() => AcceptUrdfData(Application.persistentDataPath));
+    applicationDataStore = Application.persistentDataPath;
+    Thread thread = new Thread(AcceptUrdfData);
     thread.Start();
   }
 
   // Update is called once per frame
   void Update() {}
 
-  private void AcceptUrdfData(string applicationDataStore) {
+  private void AcceptUrdfData() {
     TcpListener server = null;
     try {
       server = new TcpListener(IPAddress.Parse(LOCAL_ADDR), PORT);
