@@ -10,7 +10,7 @@ using System.Text;
 
 namespace Runtime {
 public class UrdfServer : MonoBehaviour {
-  private const int PORT = 5002;
+  private const int PORT = 5001;
   private readonly string LOCAL_ADDR = GetLocalIPAddress();
 
   private bool _isFull;

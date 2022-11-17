@@ -67,7 +67,7 @@ public class Server : MonoBehaviour {
         print("Waiting for a client connection");
         TcpClient currentClient = server.AcceptTcpClient();
         NetworkStream currentStream = currentClient.GetStream();
-        print("A client is connected.");
+        print("[+] A client is connected to the movement server.");
 
         IEnumerator<RobotState> states = null;
         try {

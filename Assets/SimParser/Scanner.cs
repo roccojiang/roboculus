@@ -36,10 +36,7 @@ public class Scanner : StreamReader {
 
     do {
       // Cannot read anymore.
-      if (EndOfStream)
-        break;
-      // XXX: This is a very hacky fix! Please replace with a proper check!
-      if (BaseStream is NetworkStream { DataAvailable : false })
+      if (!BaseStream.CanRead)
         break;
 
       int next = _pushbackBuffer.Count > 0 ? _pushbackBuffer.Pop() : Read();
@@ -74,8 +71,7 @@ public class Scanner : StreamReader {
       token = NextToken(true);
       if (!string.IsNullOrWhiteSpace(token))
         tokens.Add(token);
-    } while (!string.IsNullOrWhiteSpace(token) ||
-             _pushbackBuffer.TryPeek(out char first) && first != '\n');
+    } while (_pushbackBuffer.TryPeek(out char first) && first != '\n');
     _pushbackBuffer.Clear();
 
     return tokens;
