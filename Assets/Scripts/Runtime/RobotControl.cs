@@ -12,10 +12,10 @@ public class RobotControl : MonoBehaviour {
 
   public int jointCount;
   public string simulationFilepath;
-  public float stiffness = 1;
-  public float damping = 0;
+  public float stiffness = 100000;
+  public float damping;
   public float forceLimit = float.MaxValue;
-  public bool runSimulationFile = true;
+  public bool runSimulationFile;
 
   void Start() {
     // Get own ArticulationBody.
@@ -65,12 +65,22 @@ public class RobotControl : MonoBehaviour {
 
   private void UpdateLocation((double, double, double)nextPosition,
                               (double, double, double)nextRotation) {
+    Transform bodyTransform = _selfBody.transform;
+    Vector3 curPosition = bodyTransform.position;
+    Vector3 curRotation = bodyTransform.rotation.eulerAngles;
+
     (double x, double y, double z) = nextPosition;
     (double i, double j, double k) = nextRotation;
 
-    _selfBody.TeleportRoot(
-        new Vector3((float)x, (float)z, (float)y),
-        Quaternion.Euler((float)i, (float)k - 90f, (float)j));
+    Vector3 newPosition =
+        new Vector3((float)x + curPosition.x, (float)z + curPosition.y,
+                    (float)y + curPosition.z);
+    // Bullet uses z-axis for up/down, Unity uses y for that instead
+    Quaternion newRotation = Quaternion.Euler((float)i + curRotation.x,
+                                              (float)k - 90f + curRotation.y,
+                                              (float)j + curRotation.z);
+
+    _selfBody.TeleportRoot(newPosition, newRotation);
   }
 
   private void UpdatePose(IList<float> jointPositions) {

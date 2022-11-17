@@ -31,7 +31,7 @@ public class Scanner : StreamReader {
   /// Read the next whitespace-separated token from the stream.
   /// NOTE: Not thread safe!
   /// </summary>
-  public string NextToken() {
+  private string NextToken(bool ignoreLF = false) {
     StringBuilder internalBuilder = new();
 
     do {
@@ -56,7 +56,7 @@ public class Scanner : StreamReader {
 
       // If end of token, break. Otherwise add to builder.
       if (char.IsWhiteSpace(nextChar)) {
-        ConsumeWhitespace();
+        ConsumeWhitespace(ignoreLF, nextChar);
         break;
       }
 
@@ -66,10 +66,25 @@ public class Scanner : StreamReader {
     return internalBuilder.ToString();
   }
 
+  private IEnumerable<string> NextTokensUntilLF() {
+    List<string> tokens = new();
+
+    string token;
+    do {
+      token = NextToken(true);
+      if (!string.IsNullOrWhiteSpace(token))
+        tokens.Add(token);
+    } while (!string.IsNullOrWhiteSpace(token) ||
+             _pushbackBuffer.TryPeek(out char first) && first != '\n');
+    _pushbackBuffer.Clear();
+
+    return tokens;
+  }
+
   // Consume remaining whitespace until the next non-whitespace character
   // in the stream.
-  private void ConsumeWhitespace() {
-    int next = Read();
+  private void ConsumeWhitespace(bool ignoreLF = false, char ch = '\0') {
+    int next = ignoreLF ? (int)ch : Read();
 
     // While there are still more characters left in the stream,
     // consume all whitespace until the next non-whitespace
@@ -77,7 +92,7 @@ public class Scanner : StreamReader {
     // Then push that character into the pushback buffer.
     while (next > 0) {
       char nextChar = (char)next;
-      if (!char.IsWhiteSpace(nextChar)) {
+      if ((ignoreLF && nextChar == '\n') || !char.IsWhiteSpace(nextChar)) {
         _pushbackBuffer.Push(nextChar);
         return;
       }
@@ -96,12 +111,18 @@ public class Scanner : StreamReader {
 
   // Parses a parsable token into something, or returns the token if it fails.
   public Either<string, T>
-  ParseNext<T>(Parser<T> parser) => parser(NextToken());
+  ParseNext<T>(Parser<T> parser,
+               bool ignoreLF = false) => parser(NextToken(ignoreLF));
+
+  // Parses an enumerable of tokens.
+  public Either<string, IEnumerable<T>> ParseManyToLF<T>(Parser<T> parser) =>
+      NextTokensUntilLF().Traverse(s => parser(s));
 
   // Overload for ParseNext used for testing.
   [Obsolete(
       "Use the other ParseNext overload with a cached Parser instead for better performance.")]
-  public Either<string, T>
-  ParseNext<T>(SafeReader<T> reader) => ParseNext(ConvertToParser(reader));
+  public Either<string, T> ParseNext<T>(SafeReader<T> reader,
+                                        bool ignoreLF = false) =>
+      ParseNext(ConvertToParser(reader), ignoreLF);
 }
 }

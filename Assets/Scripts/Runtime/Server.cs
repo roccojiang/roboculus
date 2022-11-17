@@ -2,26 +2,28 @@ using SimParser;
 using System;
 using System.Threading;
 using System.Net;
-using System.Collections;
 using System.Collections.Concurrent;
 using System.Net.Sockets;
 using System.Collections.Generic;
-using System.IO;
 using UnityEngine;
 
 namespace Runtime {
 public class Server : MonoBehaviour {
   public int port = 5001;
+  public GameObject errorPopup;
+  public ErrorController errorController;
 
-  private readonly string LOCAL_ADDR = "127.0.0.1"; // GetLocalIPAddress();
+  private readonly string LOCAL_ADDR = GetLocalIPAddress();
   private IEnumerator<RobotState> _states;
   private ConcurrentQueue<RobotState> _buffer;
+  private ConcurrentQueue<Exception> _threadException;
   private RobotControl _control;
 
   // Start is called before the first frame update
   void Start() {
     _control = GetComponent<RobotControl>();
     _buffer = new ConcurrentQueue<RobotState>();
+    _threadException = new ConcurrentQueue<Exception>();
 
     Thread thread = new(AcceptRobotStateData);
     thread.Start();
@@ -29,10 +31,26 @@ public class Server : MonoBehaviour {
 
   // Update is called once per frame
   void FixedUpdate() {
+    if (_threadException.TryDequeue(out Exception exc)) {
+      errorController.textField.text = exc.Message;
+      errorPopup.SetActive(true);
+    }
+
     // if there is data, read it
-    if (_buffer.TryDequeue(out RobotState data)) {
-      // print(data);
-      _control.SetState(data);
+    if (!_buffer.TryDequeue(out RobotState data))
+      return;
+
+    // Double-check that the data is valid, in case any joint positions are out
+    // of range.
+    switch (data.IsProbablyValid()) {
+    case Left<FormatException, RobotState> l:
+      _buffer.Clear();
+      throw l.FromLeft();
+    case Right<FormatException, RobotState> r:
+      _control.SetState(r.FromRight());
+      break;
+    default:
+      throw new InvalidCastException("Not an Either.");
     }
   }
 
@@ -51,24 +69,26 @@ public class Server : MonoBehaviour {
         NetworkStream currentStream = currentClient.GetStream();
         print("A client is connected.");
 
-        IEnumerator<RobotState> states =
-            new SimulationParser(_control.jointCount, currentStream)
-                .GetEnumerator();
-        bool hasRead = false;
+        IEnumerator<RobotState> states = null;
+        try {
+          states = new SimulationParser(_control.jointCount, currentStream)
+                       .GetEnumerator();
+          bool hasRead = false;
 
-        // Keep the connection alive until a state is read.
-        while (!hasRead) {
-          hasRead = states.MoveNext();
+          // Keep the connection alive until a state is read.
+          while (!hasRead) {
+            hasRead = states.MoveNext();
+          }
+
+          // XXX: See scanner for description of hack.
+          do {
+            _buffer.Enqueue(states.Current);
+          } while (states.MoveNext());
+        } catch (Exception e) {
+          _threadException.Enqueue(e);
         }
 
-        // TODO: Need a way to exit out of this loop when states are exhausted.
-        //       Issue is that at the moment, the Scanner blocks if no
-        //       characters remain, even if
-        do {
-          _buffer.Enqueue(states.Current);
-        } while (states.MoveNext());
-
-        states.Dispose();
+        states?.Dispose();
         currentClient.Close();
         print("A connection is closed.");
       }
