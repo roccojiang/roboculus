@@ -25,6 +25,8 @@ public struct RobotState {
 
   public List<double> JointVelocities { get; private set; }
 
+  public bool IsFirst { get; set; }
+
   // Cached double parser, so the conversion isn't done repeatedly.
   private static readonly Parser<double> DoubleParser =
       Scanner.ConvertToParser<double>(double.TryParse);
@@ -69,7 +71,7 @@ public struct RobotState {
                                                            Scanner scn) {
     return scn.ParseManyToLF(DoubleParser).FlatMap(ed => {
       // Pre-initialise the robot state object.
-      RobotState state = new() { Joints = joints };
+      RobotState state = new() { Joints = joints, IsFirst = false };
 
       // Check if there are enough doubles.
       List<double> doubles = ed.ToList();
