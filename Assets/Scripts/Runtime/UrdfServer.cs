@@ -10,15 +10,14 @@ using System.Text;
 
 namespace Runtime {
 public class UrdfServer : MonoBehaviour {
-  private const int PORT = 5001;
+  private const int PORT = 5002;
   private readonly string LOCAL_ADDR = GetLocalIPAddress();
 
-  private bool _isFull;
-
+  private string applicationDataStore;
   // Start is called before the first frame update
   void Start() {
-    Thread thread =
-        new Thread(() => AcceptUrdfData(Application.persistentDataPath));
+    applicationDataStore = Application.persistentDataPath;
+    Thread thread = new Thread(() => AcceptUrdfData(applicationDataStore));
     thread.Start();
   }
 

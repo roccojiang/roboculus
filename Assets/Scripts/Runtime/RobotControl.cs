@@ -17,6 +17,10 @@ public class RobotControl : MonoBehaviour {
   public float forceLimit = float.MaxValue;
   public bool runSimulationFile;
 
+  private Vector3 startingPosition = Vector3.zero;
+  private float yCorrection = 0.0f;
+  private Quaternion startingRotation = Quaternion.identity;
+
   void Start() {
     // Get own ArticulationBody.
     _selfBody = transform.Find("base_link").GetComponent<ArticulationBody>();
@@ -55,7 +59,18 @@ public class RobotControl : MonoBehaviour {
     SetState(nextPose);
   }
 
+  public void SetStartPosition(Vector3 newPosition) {
+    startingPosition = newPosition;
+  }
+
+  public void SetStartRotation(Quaternion newRotation) {
+    startingRotation = newRotation;
+  }
+
   public void SetState(RobotState nextPose) {
+    // If first state, set yCorrection.
+    yCorrection = (float)nextPose.Position.z;
+
     // Update pose
     UpdatePose(nextPose.JointPositions.Select(d => (float)d).AsReadOnlyList());
 
@@ -65,21 +80,20 @@ public class RobotControl : MonoBehaviour {
 
   private void UpdateLocation((double, double, double)nextPosition,
                               (double, double, double)nextRotation) {
-    Transform bodyTransform = _selfBody.transform;
-    Vector3 curPosition = bodyTransform.position;
-    Vector3 curRotation = bodyTransform.rotation.eulerAngles;
+    // Bullet uses Z for up/down. Unity uses Y for that.
+    (double x, double z, double y) = nextPosition;
+    (double i, double k, double j) = nextRotation;
 
-    (double x, double y, double z) = nextPosition;
-    (double i, double j, double k) = nextRotation;
+    print(startingRotation + " -- " + nextRotation + " ### ");
+
+    Quaternion newRotation =
+        Quaternion.Euler((float)i, (float)j - 90f, (float)k);
 
     Vector3 newPosition =
-        new Vector3((float)x + curPosition.x, (float)z + curPosition.y,
-                    (float)y + curPosition.z);
-    // Bullet uses z-axis for up/down, Unity uses y for that instead
-    Quaternion newRotation = Quaternion.Euler((float)i + curRotation.x,
-                                              (float)k - 90f + curRotation.y,
-                                              (float)j + curRotation.z);
+        (new Vector3((float)x, (float)y - yCorrection, (float)z) +
+         startingPosition);
 
+    // to project: Vector3.Project(newPosition, _selfBody.transform.forward)
     _selfBody.TeleportRoot(newPosition, newRotation);
   }
 

@@ -1,6 +1,7 @@
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
+using Runtime;
 
 // grabs any object that has a collider
 // adding a GrabObject script to the object offers more functionality
@@ -301,6 +302,12 @@ public class ObjectManipulator : MonoBehaviour {
           obj.transform.rotation * Quaternion.Euler(Vector3.up * -thumbstick.x);
       obj.transform.GetComponent<ArticulationBody>().TeleportRoot(new_pos,
                                                                   new_rotation);
+
+      obj.transform.GetComponentInParent<RobotControl>()?.SetStartPosition(
+          new_pos);
+      obj.transform.GetComponentInParent<RobotControl>()?.SetStartRotation(
+          new_rotation);
+
       ClampGrabOffset(ref localGrabOffset, thumbstick.y);
     }
   }

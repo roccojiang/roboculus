@@ -9,7 +9,7 @@ using UnityEngine;
 
 namespace Runtime {
 public class Server : MonoBehaviour {
-  public int port = 5001;
+  public int port;
   public GameObject errorPopup;
   public ErrorController errorController;
 
@@ -32,7 +32,8 @@ public class Server : MonoBehaviour {
   // Update is called once per frame
   void FixedUpdate() {
     if (_threadException.TryDequeue(out Exception exc)) {
-      errorController.textField.text = exc.Message;
+      var ec = errorController.textField;
+      ec.text = exc.Message;
       errorPopup.SetActive(true);
     }
 
@@ -78,6 +79,10 @@ public class Server : MonoBehaviour {
           // Keep the connection alive until a state is read.
           while (!hasRead) {
             hasRead = states.MoveNext();
+            if (hasRead) {
+              RobotState st = states.Current;
+              st.IsFirst = true;
+            }
           }
 
           // XXX: See scanner for description of hack.
