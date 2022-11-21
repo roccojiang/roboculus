@@ -5,7 +5,7 @@ import sys
 import zipfile
 import tqdm
 
-OCULUS_IP = "146.169.154.222"
+OCULUS_IP = "146.169.155.53"
 PORT = 5002
 BUFFER_SIZE = 4096
 SEPARATOR = ":"
@@ -21,7 +21,9 @@ def main():
         return
 
     dirPath = args[0]
-    dirName = os.path.basename(dirPath)
+    if dirName[-1] != "/":
+        dirName += "/"
+    dirName = dirPath.split(os.path.sep)[-2]
 
     s = socket.socket()
 
@@ -50,6 +52,7 @@ def send_file(file, socket, writeFileName):
 
     filesize = os.path.getsize(file)
     # send filename:filesize so server can open and write to file
+    print(f"{writeFileName}{SEPARATOR}{filesize}{END_SEPARATOR}")
     socket.send(f"{writeFileName}{SEPARATOR}{filesize}{END_SEPARATOR}".encode("utf-8"))
 
     progress = tqdm.tqdm(range(

@@ -3,6 +3,7 @@ using System.Threading;
 using System.Net;
 using System.Net.Sockets;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using UnityEngine;
 using System.IO;
 using System.IO.Compression;
@@ -12,17 +13,26 @@ namespace Runtime {
 public class UrdfServer : MonoBehaviour {
   private const int PORT = 5002;
   private readonly string LOCAL_ADDR = GetLocalIPAddress();
-
-  private string applicationDataStore;
+  private ConcurrentQueue<Exception> _threadException;
+  public GameObject errorPopup;
+  public ErrorController errorController;
   // Start is called before the first frame update
   void Start() {
-    applicationDataStore = Application.persistentDataPath;
-    Thread thread = new Thread(() => AcceptUrdfData(applicationDataStore));
+    string applicationDataStore = Application.persistentDataPath;
+    _threadException = new ConcurrentQueue<Exception>();
+    Thread thread = new(() => AcceptUrdfData(applicationDataStore));
     thread.Start();
   }
 
-  // Update is called once per frame
-  void Update() {}
+  private void Update() {
+    // can either do this just after client connection or check every frame
+    // not sure doing it every frame is great...
+    if (_threadException.TryDequeue(out Exception exc)) {
+      var ec = errorController.textField;
+      ec.text = exc.Message;
+      errorPopup.SetActive(true);
+    }
+  }
 
   private void AcceptUrdfData(string applicationDataStore) {
     TcpListener server = null;
@@ -42,46 +52,52 @@ public class UrdfServer : MonoBehaviour {
         NetworkStream stream = client.GetStream();
         List<byte> buffer = new();
 
-        while (Convert.ToChar(nextByte = stream.ReadByte()) != '$') {
-          buffer.Add((byte)nextByte);
+        try {
+
+          while (Convert.ToChar(nextByte = stream.ReadByte()) != '$') {
+            buffer.Add((byte)nextByte);
+          }
+
+          // File information sent in the form of "<filename>:<filesize>$"
+          string filePair = Encoding.UTF8.GetString(buffer.ToArray());
+          string[] nameSize = filePair.Split(':');
+          string fileName = nameSize[0];
+          int fileSize = int.Parse(nameSize[1]);
+
+          print("[+] Writing " + fileSize + " bytes to " + fileName + " at " +
+                applicationDataStore);
+
+          byte[] fileBuffer = new byte[fileSize];
+          int currentOffset = 0;
+
+          // Read the zipped directory in increments
+          // Attempting to read the whole file at once will most definitely be
+          // unsuccessful
+          while (currentOffset < fileSize) {
+            currentOffset +=
+                stream.Read(fileBuffer, currentOffset,
+                            Math.Min(fileSize - currentOffset, 1024));
+          }
+
+          string tempZip =
+              Path.Combine(applicationDataStore, Guid.NewGuid() + ".zip");
+          string dest = Path.Combine(applicationDataStore, fileName);
+
+          File.WriteAllBytes(tempZip, fileBuffer);
+
+          if (!Directory.Exists(dest)) {
+            Directory.CreateDirectory(dest);
+            ZipFile.ExtractToDirectory(tempZip, dest);
+          }
+
+          File.Delete(tempZip);
+        } catch (Exception e) {
+          print("[+] EXCEPTION: " + e);
+          _threadException.Enqueue(e);
         }
-
-        // File information sent in the form of "<filename>:<filesize>$"
-        string filePair = Encoding.UTF8.GetString(buffer.ToArray());
-        string[] nameSize = filePair.Split(':');
-        string fileName = nameSize[0];
-        int fileSize = int.Parse(nameSize[1]);
-
-        print("[+] Writing " + fileSize + " bytes to " + fileName + " at " +
-              applicationDataStore);
-
-        byte[] fileBuffer = new byte[fileSize];
-        int currentOffset = 0;
-
-        // Read the zipped directory in increments
-        // Attempting to read the whole file at once will most definitely be
-        // unsuccessful
-        while (currentOffset < fileSize) {
-          currentOffset +=
-              stream.Read(fileBuffer, currentOffset,
-                          Math.Min(fileSize - currentOffset, 1024));
-        }
-
-        string tempZip = Path.Combine(
-            applicationDataStore, Path.GetTempPath() + Guid.NewGuid() + ".zip");
-        string dest = Path.Combine(applicationDataStore, fileName);
-
-        File.WriteAllBytes(tempZip, fileBuffer);
-
-        if (!Directory.Exists(dest)) {
-          Directory.CreateDirectory(dest);
-        }
-
-        ZipFile.ExtractToDirectory(tempZip, dest);
-        File.Delete(tempZip);
 
         client.Close();
-        print("Client is disconnected");
+        print("[+] Client is disconnected");
       }
     } catch (SocketException e) {
       print("SocketException: " + e);

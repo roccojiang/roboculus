@@ -39,12 +39,6 @@ public class RuntimeUrdfImporter : MonoBehaviour
             return;
         }
 
-        // clear the existing robot to avoid collision
-        if (clearOnLoad && currentRobot != null)
-        {
-            currentRobot.SetActive(false);
-            Destroy(currentRobot);
-        }
         // yield return null;
 
         ImportSettings settings = new ImportSettings
@@ -58,14 +52,27 @@ public class RuntimeUrdfImporter : MonoBehaviour
 
         if (robotObject != null && robotObject.transform != null) 
         {
+            int joint_count = 18; // This will be parsed from urdf file instead
             robotObject.transform.SetParent(transform);
-            SetControllerParameters(robotObject);
+            SetControllerParameters(robotObject, joint_count);
             Debug.Log("Successfully Loaded URDF" + robotObject.name);
         }
-        currentRobot = robotObject;
-    }
 
-    void SetControllerParameters(GameObject robot)
+        // clear the existing robot to avoid collision
+        if (clearOnLoad && currentRobot != null)
+        {
+          currentRobot.SetActive(false);
+          Destroy(currentRobot);
+        }
+
+        currentRobot = robotObject;
+        Server new_server = currentRobot.GetComponent<Server>();
+        new_server.StopServer();
+        new_server.Start();
+
+  }
+
+  void SetControllerParameters(GameObject robot, int joint_count)
     {
         Transform baseNode = robot.transform.Find(immovableLinkName);
         if (baseNode && baseNode.TryGetComponent<ArticulationBody>(out ArticulationBody baseNodeAB))
@@ -84,6 +91,18 @@ public class RuntimeUrdfImporter : MonoBehaviour
         }
 
         RobotControl control = robot.AddComponent<RobotControl>();
+        control.jointCount = joint_count;
+
+        Server old_server = currentRobot.GetComponent<Server>();
+        Server new_server = robot.AddComponent<Server>();
+
+        System.Type type = old_server.GetType();
+        // Copied fields can be restricted with BindingFlags
+        System.Reflection.FieldInfo[] fields = type.GetFields();
+        foreach (System.Reflection.FieldInfo field in fields)
+        {
+          field.SetValue(new_server, field.GetValue(old_server));
+        }
     }
 
     void Start()

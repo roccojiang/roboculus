@@ -6,51 +6,68 @@ using UnityEngine.UI;
 using System.Collections.Generic;
 
 namespace Runtime {
-  public class MenuController : MonoBehaviour {
-    public GameObject urdfButton;
-    public GameObject menuBackground;
-    public RuntimeUrdfImporter urdfImporter;
+public class MenuController : MonoBehaviour {
+  public GameObject urdfButton;
+  public GameObject menuBackground;
+  public RuntimeUrdfImporter urdfImporter;
 
-    private const int BUTTON_SEPARATION = 80;
-    private const char PATH_SEPARATOR = '/';
+  private HashSet<string> urdfs = new();
 
-    // Start is called before the first frame update
-    void Start() {
-      Debug.Log("[+] Starting menu controller!");
+  private const int BUTTON_SEPARATION = 80;
+  private const char PATH_SEPARATOR = '/';
 
-      List<string> urdfs = new();
-      string[] robots = Directory.GetDirectories(Application.persistentDataPath + PATH_SEPARATOR);
-      foreach(string robot in robots) {
-        urdfs.AddRange(Directory.GetFiles(robot, "*.urdf"));
-      }
+  private int yOffset = -BUTTON_SEPARATION / 2;
 
-      int yOffset = -BUTTON_SEPARATION / 2;
+  // Start is called before the first frame update
+  void Start() {}
 
-      foreach (string path in urdfs) {
-        var newButton =
-            Instantiate(urdfButton, new Vector3(0, 0, 0), Quaternion.identity);
-        var buttonRect = newButton.GetComponent<RectTransform>();
-        buttonRect.SetParent(menuBackground.transform);
-        buttonRect.SetLocalPositionAndRotation(new Vector3(0, yOffset, 0),
-                                               Quaternion.identity);
-        buttonRect.localScale = new Vector3(1, 1, 1);
+  // Update is called once per frame
+  void Update() {}
 
-        // urdf is top level in directory where the robot name is directory name
-        // TODO: Depending on how paths are returned on oculus this may need to be changed
-        var textObject = buttonRect.GetComponentInChildren<TextMeshProUGUI>();
-        textObject.text = path.Split(PATH_SEPARATOR)[^2];
+  public void UpdateMenu() {
+    Debug.Log("[+] Starting menu controller!");
 
-        newButton.GetComponent<Button>().onClick.AddListener(() => {
-          Debug.Log("IMPORTING ROBOT");
-          Debug.Log("urdf object:" + urdfImporter);
-          urdfImporter.LoadUrdf(path);
-        });
+    string[] robots = Directory.GetDirectories(Application.persistentDataPath +
+                                               PATH_SEPARATOR);
+    print(robots.ToString());
+    print(urdfs.ToString());
+    foreach (string robot in robots) {
+      foreach (string path in Directory.GetFiles(robot, "*.urdf")) {
+        print(path);
 
-        yOffset -= BUTTON_SEPARATION;
+        if (urdfs.Add(path)) {
+          AddUrdfButton(path);
+        }
       }
     }
-
-    // Update is called once per frame
-    void Update() {}
   }
+
+  private void AddUrdfButton(string path) {
+    print("path: " + path + " at offset " + yOffset);
+    var newButton =
+        Instantiate(urdfButton, new Vector3(0, 0, 0), Quaternion.identity);
+    var buttonRect = newButton.GetComponent<RectTransform>();
+    buttonRect.SetParent(menuBackground.transform);
+
+    RectTransform scrollView = buttonRect.parent.parent.parent as RectTransform;
+    buttonRect.SetLocalPositionAndRotation(
+        new Vector3(scrollView.rect.width / 2, yOffset, 0),
+        Quaternion.identity);
+    buttonRect.localScale = new Vector3(1, 1, 1);
+
+    // urdf is top level in directory where the robot name is directory name
+    // TODO: Depending on how paths are returned on oculus this may need to be
+    // changed
+    var textObject = buttonRect.GetComponentInChildren<TextMeshProUGUI>();
+    textObject.text = path.Split(PATH_SEPARATOR)[^2];
+
+    newButton.GetComponent<Button>().onClick.AddListener(() => {
+      Debug.Log("IMPORTING ROBOT");
+      Debug.Log("urdf object:" + urdfImporter);
+      urdfImporter.LoadUrdf(path);
+    });
+
+    yOffset -= BUTTON_SEPARATION;
+  }
+}
 }
