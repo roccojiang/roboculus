@@ -6,14 +6,13 @@ using System.Collections.Concurrent;
 using System.Net.Sockets;
 using System.Collections.Generic;
 using System.Text;
-using TMPro;
 using UnityEngine;
 
 namespace Runtime {
 public class Server : MonoBehaviour {
   public int port;
-  public GameObject errorPopup;
-  public ErrorController errorController;
+
+  public static event Action<string> TriggerPopupWindow;
 
   private readonly string _localAddr = Utils.GetLocalIPAddress();
   private IEnumerator<RobotState> _states;
@@ -41,9 +40,7 @@ public class Server : MonoBehaviour {
     }
 
     if (_threadException.TryDequeue(out Exception exc)) {
-      TextMeshProUGUI ec = errorController.textField;
-      ec.text = exc.Message;
-      errorPopup.SetActive(true);
+      TriggerPopupWindow?.Invoke("Error: " + exc.Message);
     }
 
     // if there is data, read it
@@ -152,6 +149,8 @@ public class Server : MonoBehaviour {
         do {
           print("[+] Waiting for IP.");
         } while (!ReadIPAddress(_server));
+        TriggerPopupWindow?.Invoke(
+            "Client IP found. Please press 'A' to start streaming simulated movement data.");
 
         // The second connection that receives the states.
         ReceiveStates(_server);
