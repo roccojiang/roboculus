@@ -8,14 +8,17 @@ using UnityEngine;
 using System.IO;
 using System.IO.Compression;
 using System.Text;
+using TMPro;
 
 namespace Runtime {
 public class UrdfServer : MonoBehaviour {
-  private const int PORT = 5002;
-  private readonly string LOCAL_ADDR = GetLocalIPAddress();
+  private const int Port = 5002;
+  private readonly string _localAddr = Utils.GetLocalIPAddress();
+
   private ConcurrentQueue<Exception> _threadException;
   public GameObject errorPopup;
   public ErrorController errorController;
+
   // Start is called before the first frame update
   void Start() {
     string applicationDataStore = Application.persistentDataPath;
@@ -27,24 +30,24 @@ public class UrdfServer : MonoBehaviour {
   private void Update() {
     // can either do this just after client connection or check every frame
     // not sure doing it every frame is great...
-    if (_threadException.TryDequeue(out Exception exc)) {
-      var ec = errorController.textField;
-      ec.text = exc.Message;
-      errorPopup.SetActive(true);
-    }
+    if (!_threadException.TryDequeue(out Exception exc))
+      return;
+
+    TextMeshProUGUI ec = errorController.textField;
+    ec.text = exc.Message;
+    errorPopup.SetActive(true);
   }
 
   private void AcceptUrdfData(string applicationDataStore) {
     TcpListener server = null;
+
     try {
-      server = new TcpListener(IPAddress.Parse(LOCAL_ADDR), PORT);
+      server = new TcpListener(IPAddress.Parse(_localAddr), Port);
 
       server.Start();
-      print("[+] Server has started on " + LOCAL_ADDR + ":" + PORT);
+      print("[+] Server has started on " + _localAddr + ":" + Port);
 
       while (true) {
-        int nextByte;
-
         print("[+] Waiting for a client connection");
         TcpClient client = server.AcceptTcpClient();
         print("[+] A client is connected.");
@@ -53,6 +56,7 @@ public class UrdfServer : MonoBehaviour {
         List<byte> buffer = new();
 
         try {
+          int nextByte;
 
           while (Convert.ToChar(nextByte = stream.ReadByte()) != '$') {
             buffer.Add((byte)nextByte);
@@ -101,21 +105,10 @@ public class UrdfServer : MonoBehaviour {
       }
     } catch (SocketException e) {
       print("SocketException: " + e);
+      _threadException.Enqueue(e);
     } finally {
-      server.Stop();
+      server?.Stop();
     }
-  }
-
-  private static string GetLocalIPAddress() {
-    var host = Dns.GetHostEntry(Dns.GetHostName());
-    foreach (var ip in host.AddressList) {
-      if (ip.AddressFamily == AddressFamily.InterNetwork) {
-        return ip.ToString();
-      }
-    }
-
-    throw new System.Exception(
-        "No network adapters with an IPv4 address in the system!");
   }
 }
 }

@@ -220,6 +220,12 @@ public class ObjectManipulator : MonoBehaviour {
     Vector2 thumbstick =
         OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick, controller);
 
+    // If the object is a robot and it has been made non-grabbable, don't grab
+    // it.
+    if (!(obj.transform.GetComponentInParent<RobotControl>()?.Grabbable ??
+          true))
+      return;
+
     if (obj.GetComponent<GrabObject>()) {
       useDefaultManipulation = false;
       switch (obj.GetComponent<GrabObject>().objectManipulationType) {
