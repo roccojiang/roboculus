@@ -8,7 +8,6 @@ using UnityEngine;
 using System.IO;
 using System.IO.Compression;
 using System.Text;
-using TMPro;
 
 namespace Runtime {
 public class UrdfServer : MonoBehaviour {
@@ -16,8 +15,9 @@ public class UrdfServer : MonoBehaviour {
   private readonly string _localAddr = Utils.GetLocalIPAddress();
 
   private ConcurrentQueue<Exception> _threadException;
-  public GameObject errorPopup;
-  public ErrorController errorController;
+
+  public static event Action<string> TriggerPopupWindow;
+  public static event Action<string> OnUrdfUpload;
 
   // Start is called before the first frame update
   void Start() {
@@ -30,12 +30,12 @@ public class UrdfServer : MonoBehaviour {
   private void Update() {
     // can either do this just after client connection or check every frame
     // not sure doing it every frame is great...
-    if (!_threadException.TryDequeue(out Exception exc))
-      return;
-
-    TextMeshProUGUI ec = errorController.textField;
-    ec.text = exc.Message;
-    errorPopup.SetActive(true);
+    // if (OVRInput.GetUp(OVRInput.Button.Three))
+    // TriggerPopupWindow?.Invoke("HELLO"); // TODO: remove, just for testing
+    // purposes
+    if (_threadException.TryDequeue(out Exception exc)) {
+      TriggerPopupWindow?.Invoke("Error: " + exc.Message);
+    }
   }
 
   private void AcceptUrdfData(string applicationDataStore) {
@@ -95,6 +95,10 @@ public class UrdfServer : MonoBehaviour {
           }
 
           File.Delete(tempZip);
+
+          OnUrdfUpload?.Invoke(
+              applicationDataStore); // event handler will trigger live refresh
+                                     // in menu
         } catch (Exception e) {
           print("[+] EXCEPTION: " + e);
           _threadException.Enqueue(e);
