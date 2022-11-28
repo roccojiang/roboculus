@@ -300,13 +300,17 @@ public class ObjectManipulator : MonoBehaviour {
       Vector3 new_pos = controllerPos + controllerRot * localGrabOffset;
       Quaternion new_rotation =
           obj.transform.rotation * Quaternion.Euler(Vector3.up * -thumbstick.x);
+
+      RobotControl control = obj.transform.GetComponentInParent<RobotControl>();
+
+      if (control != null) {
+        new_pos.y = obj.transform.position.y;
+
+        control.SetStartPosition(new_pos);
+        control.SetStartRotation(new_rotation);
+      }
       obj.transform.GetComponent<ArticulationBody>().TeleportRoot(new_pos,
                                                                   new_rotation);
-
-      obj.transform.GetComponentInParent<RobotControl>()?.SetStartPosition(
-          new_pos);
-      obj.transform.GetComponentInParent<RobotControl>()?.SetStartRotation(
-          new_rotation);
 
       ClampGrabOffset(ref localGrabOffset, thumbstick.y);
     }
