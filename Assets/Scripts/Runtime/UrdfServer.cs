@@ -45,7 +45,7 @@ public class UrdfServer : MonoBehaviour {
       server = new TcpListener(IPAddress.Parse(_localAddr), Port);
 
       server.Start();
-      print("[+] Server has started on " + _localAddr + ":" + Port);
+      print("[+] URDF Server has started on " + _localAddr + ":" + Port);
 
       while (true) {
         print("[+] Waiting for a client connection");
