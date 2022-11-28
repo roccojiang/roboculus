@@ -1,6 +1,5 @@
 using UnityEngine;
 using System.IO;
-using System.Linq;
 using TMPro;
 using UnityEngine.UI;
 using System.Collections.Generic;
@@ -9,9 +8,13 @@ namespace Runtime {
 public class MenuController : MonoBehaviour {
   public GameObject urdfButton;
   public GameObject menuBackground;
+  public GameObject menu;
+  public GameObject cameraEyeAnchor;
   public RuntimeUrdfImporter urdfImporter;
 
   private HashSet<string> urdfs = new();
+
+  private const int DISTANCE_FROM_CAMERA = 3;
 
   private const int BUTTON_SEPARATION = 80;
   private const char PATH_SEPARATOR = '/';
@@ -22,8 +25,23 @@ public class MenuController : MonoBehaviour {
   void Start() {}
 
   // Update is called once per frame
-  void Update() {}
+  void Update() {
+    // Open menu with either (right hand) 'B' button or (left) menu button
+    if (OVRInput.GetUp(OVRInput.Button.Two) ||
+        OVRInput.GetUp(OVRInput.Button.Start)) {
+      transform.position =
+          cameraEyeAnchor.transform.position +
+          (cameraEyeAnchor.transform.forward * DISTANCE_FROM_CAMERA);
+      transform.rotation = cameraEyeAnchor.transform.rotation;
+      // Keep menu upright
+      transform.rotation =
+          Quaternion.Euler(transform.eulerAngles.x, transform.eulerAngles.y, 0);
 
+      menu.SetActive(!menu.activeSelf);
+    }
+  }
+
+  // TODO: make this a delegate instead?
   public void UpdateMenu() {
     Debug.Log("[+] Starting menu controller!");
 
