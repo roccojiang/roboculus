@@ -79,8 +79,9 @@ public class Server : MonoBehaviour {
       _responder = null;
 
       byte[] buf = new byte[512];
-      if (currentStream.Read(buf, 0, 512) > 0) {
-        string maybeIp = Encoding.UTF8.GetString(buf);
+      int read;
+      if ((read = currentStream.Read(buf, 0, 512)) > 0) {
+        string maybeIp = Encoding.UTF8.GetString(buf, 0, read);
         if (IPAddress.TryParse(maybeIp, out IPAddress addr)) {
           print("[+] IP read: " + maybeIp);
           _responder = addr;
@@ -143,7 +144,7 @@ public class Server : MonoBehaviour {
     _server = new TcpListener(IPAddress.Parse(_localAddr), port);
     try {
       _server.Start();
-      print("Server has started on " + _localAddr + ":" + port);
+      print("[+] Movement Server has started on " + _localAddr + ":" + port);
 
       while (true) {
         print("Waiting for a client connection");
@@ -164,16 +165,20 @@ public class Server : MonoBehaviour {
   }
 
   private void Respond() {
-    if (_responder == null) {
+    IPAddress responder = _responder;
+    _responder = null;
+
+    if (responder == null) {
       print("[+] No IP to respond to. Returning.");
       return;
     }
 
-    print("[+] Connecting to " + _responder + " to ask for data.");
+    print("[+] Connecting to " + responder +
+          " to ask for data. Clearing cached IP.");
     using Socket client =
-        new(_responder.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
+        new(responder.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
 
-    client.Connect(_responder, 5001);
+    client.Connect(responder, 5001);
     print("[+] Success.");
   }
 
