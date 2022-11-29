@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace Runtime {
 public class RobotControl : MonoBehaviour {
@@ -20,12 +21,31 @@ public class RobotControl : MonoBehaviour {
   private Vector3 _startingPosition = Vector3.zero;
   private float _yCorrection = 0.0f;
   private Quaternion _startingRotation = Quaternion.identity;
+  private Renderer[] _renderers;
+  private const float DeadZone = 0.15f;
 
   public bool Grabbable { get; set; } = true;
 
   void Start() {
     // Get own ArticulationBody.
     _selfBody = transform.Find("base_link").GetComponent<ArticulationBody>();
+
+    // Find all the robot's renderers.
+    _renderers = GetComponentsInChildren<Renderer>();
+    foreach (Renderer r in _renderers) {
+      // """Gently coerce""" the materials to be transparent.
+      foreach (Material m in r.materials) {
+        m.SetFloat("_Mode", 3f); // Pong my-[EXPLETIVE REDACTED]
+        m.SetOverrideTag("RenderType", "Transparent");
+        m.SetFloat("_SrcBlend", (float)BlendMode.One);
+        m.SetFloat("_DstBlend", (float)BlendMode.OneMinusSrcAlpha);
+        m.SetFloat("_ZWrite", 0.0f);
+        m.DisableKeyword("_ALPHATEST_ON");
+        m.DisableKeyword("_ALPHABLEND_ON");
+        m.EnableKeyword("_ALPHAPREMULTIPLY_ON");
+        m.renderQueue = (int)RenderQueue.Transparent;
+      }
+    }
 
     // Set up chain.
     ArticulationBody[] chain = GetComponentsInChildren<ArticulationBody>();
@@ -52,7 +72,35 @@ public class RobotControl : MonoBehaviour {
     }
   }
 
+  private static void ChangeOpacity(Renderer renderer, float increment) {
+    foreach (Material material in renderer.materials) {
+      Color oldColor = material.color;
+      float oldAlpha = oldColor.a;
+
+      material.color = new Color(oldColor.r, oldColor.g, oldColor.b,
+                                 Mathf.Clamp(oldAlpha + increment, 0.0f, 1.0f));
+    }
+  }
+
+  private void HandleOpacityInputs() {
+    // Get the thumbstick axes for the secondary controller.
+    Vector2 secondThumbS = OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick);
+    float vert = secondThumbS.y;
+
+    // If the controls are within a thumbstick dead-zone, don't change the
+    // opacity.
+    if (Mathf.Abs(vert) < DeadZone)
+      return;
+
+    // Modify the opacities here.
+    foreach (Renderer r in _renderers) {
+      ChangeOpacity(r, 0.025f * vert);
+    }
+  }
+
   void FixedUpdate() {
+    HandleOpacityInputs();
+
     if (!runSimulationFile || !_robotStates.MoveNext())
       return;
 
