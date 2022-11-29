@@ -101,6 +101,9 @@ public class Server : MonoBehaviour {
     }
   }
 
+  private static T RunWithTimeout<T>(Func<T> action) =>
+      Utils.RunTaskWithTimeout(action, TimeSpan.FromSeconds(10));
+
   private void ReceiveStates(TcpListener server) {
     TcpClient currentClient = server.AcceptTcpClient();
     NetworkStream currentStream = currentClient.GetStream();
@@ -108,13 +111,15 @@ public class Server : MonoBehaviour {
 
     IEnumerator<RobotState> states = null;
     try {
-      states = new SimulationParser(_control.jointCount, currentStream)
-                   .GetEnumerator();
+      states = RunWithTimeout(
+          () => new SimulationParser(_control.jointCount, currentStream)
+                    .GetEnumerator());
       bool hasRead = false;
 
       // Keep the connection alive until a state is read.
       while (!hasRead) {
-        hasRead = states.MoveNext();
+        // ReSharper disable once AccessToDisposedClosure
+        hasRead = RunWithTimeout(() => states.MoveNext());
         if (!hasRead)
           continue;
 
@@ -124,8 +129,9 @@ public class Server : MonoBehaviour {
 
       // XXX: See scanner for description of hack.
       do
-        _buffer.Enqueue(states.Current);
-      while (states.MoveNext());
+        _buffer.Enqueue(
+            states.Current); // ReSharper disable once AccessToDisposedClosure
+      while (RunWithTimeout(() => states.MoveNext()));
     } catch (Exception e) {
       _threadException.Enqueue(e);
     }
@@ -149,6 +155,7 @@ public class Server : MonoBehaviour {
         do {
           print("[+] Waiting for IP.");
         } while (!ReadIPAddress(_server));
+
         TriggerPopupWindow?.Invoke(
             "Client IP found. Please press 'A' to start streaming simulated movement data.");
 
@@ -156,7 +163,7 @@ public class Server : MonoBehaviour {
         ReceiveStates(_server);
       }
     } catch (SocketException e) {
-      print("SocketException: " + e);
+      print("[+] SocketException: " + e);
     } finally {
       print("[+] Server thread ending");
       StopServer();
