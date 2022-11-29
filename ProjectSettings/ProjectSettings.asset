@@ -161,7 +161,7 @@ PlayerSettings:
   androidSupportedAspectRatio: 1
   androidMaxAspectRatio: 2.1
   applicationIdentifier:
-    Android: com.SEGP.RobotVisualiserEd
+    Android: com.SEGP.RobotVisualiser
     Standalone: com.SEGP.RobotVisualiser
   buildNumber:
     Standalone: 0

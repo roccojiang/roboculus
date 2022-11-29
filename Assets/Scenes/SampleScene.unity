@@ -6537,6 +6537,7 @@ MonoBehaviour:
   objectNameLabel: {fileID: 0}
   objectInstructionsLabel: {fileID: 0}
   objectInfoBG: {fileID: 0}
+  robot: {fileID: 1628788646}
   demoObjects: {fileID: 968777054}
   passthrough: {fileID: 0}
 --- !u!4 &1285069863
