@@ -26,6 +26,7 @@ public class ObjectManipulator : MonoBehaviour {
   public TextMesh objectNameLabel;
   public TextMesh objectInstructionsLabel;
   public Image objectInfoBG;
+  public GameObject robot;
 
   // align these in front of the user's view when starting
   public GameObject demoObjects;
@@ -61,9 +62,14 @@ public class ObjectManipulator : MonoBehaviour {
         grabObject = hoverObject;
         GrabHoverObject(grabObject, controllerPos, controllerRot);
       }
+    } else {
+      // if don't hover an object - don't vibrate
+      OVRInput.SetControllerVibration(0, 0, OVRInput.Controller.RTouch);
     }
 
     if (grabObject) {
+      // if grabbing then don't vibrate
+      OVRInput.SetControllerVibration(0, 0, OVRInput.Controller.RTouch);
       grabTime += Time.deltaTime * 5;
       grabTime = Mathf.Clamp01(grabTime);
       ManipulateObject(grabObject, controllerPos, controllerRot);
@@ -138,33 +144,28 @@ public class ObjectManipulator : MonoBehaviour {
   void FindHoverObject(Vector3 controllerPos, Quaternion controllerRot) {
     RaycastHit[] objectsHit =
         Physics.RaycastAll(controllerPos, controllerRot * Vector3.forward);
-    float closestObject = Mathf.Infinity;
     float rayDistance = 2.0f;
     bool showLaser = true;
     Vector3 labelPosition = Vector3.zero;
+    bool isHover = false;
+
     foreach (RaycastHit hit in objectsHit) {
-      float thisHitDistance = Vector3.Distance(hit.point, controllerPos);
-      if (thisHitDistance < closestObject) {
-        hoverObject = hit.collider.gameObject;
-        closestObject = thisHitDistance;
+      // If laser hits the BoxCollider in base_link - exit
+      if (robot.GetComponent<Collider>().bounds.Contains(hit.point)) {
+        hoverObject = robot;
+        isHover = true;
+        float thisHitDistance = Vector3.Distance(hit.point, controllerPos);
         rayDistance = grabObject ? thisHitDistance : thisHitDistance - 0.1f;
         labelPosition = hit.point;
+        OVRInput.SetControllerVibration(1, 0.01f, OVRInput.Controller.RTouch);
+        break;
+      } else {
+        // Don't vibrate, if don't hit the collider
+        OVRInput.SetControllerVibration(0, 0, OVRInput.Controller.RTouch);
       }
     }
-    if (objectsHit.Length == 0) {
+    if (!isHover) {
       hoverObject = null;
-    }
-
-    // if intersecting with an object, grab it
-    Collider[] hitColliders = Physics.OverlapSphere(controllerPos, 0.05f);
-    foreach (var hitCollider in hitColliders) {
-      // use the last object, if there are multiple hits.
-      // If objects overlap, this would require improvements.
-      hoverObject = hitCollider.gameObject;
-      showLaser = false;
-      labelPosition = hitCollider.ClosestPoint(controllerPos);
-      labelPosition +=
-          (Camera.main.transform.position - labelPosition).normalized * 0.05f;
     }
 
     if (objectInfo && objectInstructionsLabel) {
