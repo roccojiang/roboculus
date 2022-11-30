@@ -2,11 +2,15 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using Runtime;
+using UnityEngine.Serialization;
 
 // grabs any object that has a collider
 // adding a GrabObject script to the object offers more functionality
 public class ObjectManipulator : MonoBehaviour {
-  OVRInput.Controller controller = OVRInput.Controller.RTouch;
+  public OVRInput.Controller Controller {
+    get; private set;
+  } = OVRInput.Controller.RTouch;
+
   GameObject hoverObject = null;
   GameObject grabObject = null;
   // all-purpose timer to use for blending after object is grabbed/released
@@ -51,30 +55,30 @@ public class ObjectManipulator : MonoBehaviour {
   }
 
   void Update() {
-    Vector3 controllerPos = OVRInput.GetLocalControllerPosition(controller);
-    Quaternion controllerRot = OVRInput.GetLocalControllerRotation(controller);
+    Vector3 controllerPos = OVRInput.GetLocalControllerPosition(Controller);
+    Quaternion controllerRot = OVRInput.GetLocalControllerRotation(Controller);
+    // TODO: left hand still cannot use menus for some reason, but robot
+    // grabbing works with both hands CheckForDominantHand(); // switches
+    // controller hand (if trigger used on a different hand)
 
     FindHoverObject(controllerPos, controllerRot);
 
     if (hoverObject) {
-      if (OVRInput.GetDown(OVRInput.Button.PrimaryHandTrigger, controller)) {
+      if (OVRInput.GetDown(OVRInput.Button.PrimaryHandTrigger, Controller)) {
         // grabbing
         grabObject = hoverObject;
         GrabHoverObject(grabObject, controllerPos, controllerRot);
       }
-    } else {
-      // if don't hover an object - don't vibrate
-      OVRInput.SetControllerVibration(0, 0, OVRInput.Controller.RTouch);
     }
 
     if (grabObject) {
       // if grabbing then don't vibrate
-      OVRInput.SetControllerVibration(0, 0, OVRInput.Controller.RTouch);
+      OVRInput.SetControllerVibration(0, 0, Controller);
       grabTime += Time.deltaTime * 5;
       grabTime = Mathf.Clamp01(grabTime);
       ManipulateObject(grabObject, controllerPos, controllerRot);
 
-      if (!OVRInput.Get(OVRInput.Button.PrimaryHandTrigger, controller)) {
+      if (!OVRInput.Get(OVRInput.Button.PrimaryHandTrigger, Controller)) {
         ReleaseObject();
       }
     } else {
@@ -91,7 +95,7 @@ public class ObjectManipulator : MonoBehaviour {
         Quaternion.Inverse(controllerRot) * grabObject.transform.rotation;
     rotationOffset = 0.0f;
     if (grabObject.GetComponent<GrabObject>()) {
-      grabObject.GetComponent<GrabObject>().Grab(controller);
+      grabObject.GetComponent<GrabObject>().Grab(Controller);
       grabObject.GetComponent<GrabObject>().grabbedRotation =
           grabObject.transform.rotation;
       AssignInstructions(grabObject.GetComponent<GrabObject>());
@@ -144,28 +148,50 @@ public class ObjectManipulator : MonoBehaviour {
   void FindHoverObject(Vector3 controllerPos, Quaternion controllerRot) {
     RaycastHit[] objectsHit =
         Physics.RaycastAll(controllerPos, controllerRot * Vector3.forward);
+    float closestObject = Mathf.Infinity;
     float rayDistance = 2.0f;
     bool showLaser = true;
     Vector3 labelPosition = Vector3.zero;
     bool isHover = false;
 
     foreach (RaycastHit hit in objectsHit) {
+      // print("[***] " + hit.transform.gameObject.name);
+      float thisHitDistance = Vector3.Distance(hit.point, controllerPos);
+
       // If laser hits the BoxCollider in base_link - exit
       if (robot.GetComponent<Collider>().bounds.Contains(hit.point)) {
         hoverObject = robot;
         isHover = true;
-        float thisHitDistance = Vector3.Distance(hit.point, controllerPos);
         rayDistance = grabObject ? thisHitDistance : thisHitDistance - 0.1f;
         labelPosition = hit.point;
-        OVRInput.SetControllerVibration(1, 0.01f, OVRInput.Controller.RTouch);
+        // OVRInput.SetControllerVibration(1, 0.01f,
+        // OVRInput.Controller.RTouch);
+        StartCoroutine(ControllerPulse(0.5f, 0.01f, Controller));
         break;
-      } else {
-        // Don't vibrate, if don't hit the collider
-        OVRInput.SetControllerVibration(0, 0, OVRInput.Controller.RTouch);
+      }
+
+      else if (thisHitDistance < closestObject) {
+        hoverObject = hit.collider.gameObject;
+        closestObject = thisHitDistance;
+        rayDistance = grabObject ? thisHitDistance : thisHitDistance - 0.1f;
+        labelPosition = hit.point;
       }
     }
-    if (!isHover) {
+
+    if (!isHover || objectsHit.Length == 0) {
       hoverObject = null;
+    }
+
+    // if intersecting with an object, grab it
+    Collider[] hitColliders = Physics.OverlapSphere(controllerPos, 0.05f);
+    foreach (var hitCollider in hitColliders) {
+      // use the last object, if there are multiple hits.
+      // If objects overlap, this would require improvements.
+      hoverObject = hitCollider.gameObject;
+      showLaser = false;
+      labelPosition = hitCollider.ClosestPoint(controllerPos);
+      labelPosition +=
+          (Camera.main.transform.position - labelPosition).normalized * 0.05f;
     }
 
     if (objectInfo && objectInstructionsLabel) {
@@ -219,7 +245,7 @@ public class ObjectManipulator : MonoBehaviour {
                         Quaternion controllerRot) {
     bool useDefaultManipulation = true;
     Vector2 thumbstick =
-        OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick, controller);
+        OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick, Controller);
 
     // If the object is a robot and it has been made non-grabbable, don't grab
     // it.
@@ -258,7 +284,7 @@ public class ObjectManipulator : MonoBehaviour {
       case GrabObject.ManipulationType.HorizontalScaled:
         obj.transform.position =
             controllerPos + controllerRot * localGrabOffset;
-        if (!OVRInput.Get(OVRInput.Button.PrimaryIndexTrigger, controller)) {
+        if (!OVRInput.Get(OVRInput.Button.PrimaryIndexTrigger, Controller)) {
           obj.transform.localScale =
               ClampScale(obj.transform.localScale, thumbstick);
         } else {
@@ -274,7 +300,7 @@ public class ObjectManipulator : MonoBehaviour {
       case GrabObject.ManipulationType.VerticalScaled:
         obj.transform.position =
             controllerPos + controllerRot * localGrabOffset;
-        if (!OVRInput.Get(OVRInput.Button.PrimaryIndexTrigger, controller)) {
+        if (!OVRInput.Get(OVRInput.Button.PrimaryIndexTrigger, Controller)) {
           obj.transform.localScale =
               ClampScale(obj.transform.localScale, thumbstick);
         } else {
@@ -310,6 +336,7 @@ public class ObjectManipulator : MonoBehaviour {
 
       RobotControl control = obj.transform.GetComponentInParent<RobotControl>();
 
+      // TODO: new controls
       if (control != null) {
         new_pos.y = obj.transform.position.y;
 
@@ -346,13 +373,15 @@ public class ObjectManipulator : MonoBehaviour {
     if (hoverObject || grabObject) {
       return;
     }
-    if (controller == OVRInput.Controller.RTouch) {
-      if (OVRInput.Get(OVRInput.RawButton.LHandTrigger)) {
-        controller = OVRInput.Controller.LTouch;
+    if (Controller == OVRInput.Controller.RTouch) {
+      if (OVRInput.Get(OVRInput.RawButton.LHandTrigger) ||
+          OVRInput.Get(OVRInput.RawButton.LIndexTrigger)) {
+        Controller = OVRInput.Controller.LTouch;
       }
     } else {
-      if (OVRInput.Get(OVRInput.RawButton.RHandTrigger)) {
-        controller = OVRInput.Controller.RTouch;
+      if (OVRInput.Get(OVRInput.RawButton.RHandTrigger) ||
+          OVRInput.Get(OVRInput.RawButton.RIndexTrigger)) {
+        Controller = OVRInput.Controller.RTouch;
       }
     }
   }
@@ -368,5 +397,12 @@ public class ObjectManipulator : MonoBehaviour {
         objectInstructionsLabel.text = "Grip Trigger to grab";
       }
     }
+  }
+
+  public static IEnumerator ControllerPulse(float amplitude, float duration,
+                                            OVRInput.Controller hand) {
+    OVRInput.SetControllerVibration(1, amplitude, hand);
+    yield return new WaitForSeconds(duration);
+    OVRInput.SetControllerVibration(0, 0, hand);
   }
 }
