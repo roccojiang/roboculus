@@ -50,7 +50,6 @@ public class RobotControl : MonoBehaviour {
 
     // Set up chain.
     ArticulationBody[] chain = GetComponentsInChildren<ArticulationBody>();
-    SetToGround();
 
     const int defDynamicVal = 10;
     foreach (ArticulationBody joint in chain) {
@@ -100,8 +99,15 @@ public class RobotControl : MonoBehaviour {
     }
   }
 
+  private void HandleRobotHeight() {
+    if (OVRInput.GetUp(OVRInput.Button.PrimaryThumbstick)) {
+      SetToGround();
+    }
+  }
+
   void FixedUpdate() {
     HandleOpacityInputs();
+    HandleRobotHeight();
 
     if (!runSimulationFile || !_robotStates.MoveNext())
       return;
