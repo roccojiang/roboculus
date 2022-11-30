@@ -9,7 +9,6 @@ public class HapticButtonBehaviour : MonoBehaviour, IPointerEnterHandler {
   void Update() {}
 
   public void OnPointerEnter(PointerEventData eventData) {
-    StopAllCoroutines();
     var controller = GameObject.Find("/ObjectManipulator")
                          .GetComponent<ObjectManipulator>()
                          .Controller;

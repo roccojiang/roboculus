@@ -1,8 +1,8 @@
+using System;
 using System.Collections;
 using UnityEngine;
 using UnityEngine.UI;
 using Runtime;
-using UnityEngine.Serialization;
 
 // grabs any object that has a collider
 // adding a GrabObject script to the object offers more functionality
@@ -10,6 +10,8 @@ public class ObjectManipulator : MonoBehaviour {
   public OVRInput.Controller Controller {
     get; private set;
   } = OVRInput.Controller.RTouch;
+
+  public static event Action<OVRInput.Controller> DominantHandChanged;
 
   GameObject hoverObject = null;
   GameObject grabObject = null;
@@ -57,9 +59,8 @@ public class ObjectManipulator : MonoBehaviour {
   void Update() {
     Vector3 controllerPos = OVRInput.GetLocalControllerPosition(Controller);
     Quaternion controllerRot = OVRInput.GetLocalControllerRotation(Controller);
-    // TODO: left hand still cannot use menus for some reason, but robot
-    // grabbing works with both hands CheckForDominantHand(); // switches
-    // controller hand (if trigger used on a different hand)
+    CheckForDominantHand(); // switches controller hand (if trigger used on a
+                            // different hand)
 
     FindHoverObject(controllerPos, controllerRot);
 
@@ -155,7 +156,6 @@ public class ObjectManipulator : MonoBehaviour {
     bool isHover = false;
 
     foreach (RaycastHit hit in objectsHit) {
-      // print("[***] " + hit.transform.gameObject.name);
       float thisHitDistance = Vector3.Distance(hit.point, controllerPos);
 
       // If laser hits the BoxCollider in base_link - exit
@@ -384,6 +384,7 @@ public class ObjectManipulator : MonoBehaviour {
         Controller = OVRInput.Controller.RTouch;
       }
     }
+    DominantHandChanged?.Invoke(Controller);
   }
 
   void AssignInstructions(GrabObject targetObject) {
