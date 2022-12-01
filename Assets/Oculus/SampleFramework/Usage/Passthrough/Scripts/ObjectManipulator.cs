@@ -26,6 +26,7 @@ public class ObjectManipulator : MonoBehaviour {
   Vector3 handGrabPosition = Vector3.zero;
   Quaternion handGrabRotation = Quaternion.identity;
   Vector3 cursorPosition = Vector3.zero;
+  bool isBeingHeightAdjusted = false;
   float rotationOffset = 0.0f;
   public LineRenderer laser;
   public Transform objectInfo;
@@ -344,11 +345,13 @@ public class ObjectManipulator : MonoBehaviour {
 
       // TODO: new controls
       if (control != null) {
-        if (OVRInput.Get(OVRInput.Button.SecondaryIndexTrigger)) {
+        if (OVRInput.Get(OVRInput.Button.SecondaryIndexTrigger) ||
+            isBeingHeightAdjusted) {
           laser.enabled = false;
           oldPosition.y += 0.0025f * thumbstick.y;
           newRotation = oldRotation;
           newPosition = oldPosition;
+          isBeingHeightAdjusted = true;
         } else {
           newPosition.y = oldPosition.y;
         }
@@ -358,6 +361,10 @@ public class ObjectManipulator : MonoBehaviour {
       }
       obj.transform.GetComponent<ArticulationBody>().TeleportRoot(newPosition,
                                                                   newRotation);
+
+      if (OVRInput.GetUp(OVRInput.Button.SecondaryHandTrigger)) {
+        isBeingHeightAdjusted = false;
+      }
 
       ClampGrabOffset(ref localGrabOffset, thumbstick.y);
     }
