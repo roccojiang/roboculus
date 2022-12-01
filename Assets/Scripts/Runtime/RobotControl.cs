@@ -100,7 +100,8 @@ public class RobotControl : MonoBehaviour {
   }
 
   private void HandleRobotHeight() {
-    if (OVRInput.GetUp(OVRInput.Button.PrimaryThumbstick)) {
+    if (OVRInput.GetUp(OVRInput.Button.PrimaryThumbstick) ||
+        OVRInput.GetUp(OVRInput.Button.SecondaryThumbstick)) {
       SetToGround();
     }
   }
@@ -126,8 +127,11 @@ public class RobotControl : MonoBehaviour {
   }
 
   public float GetRobotHeight() {
-    return _selfBody.GetComponentsInChildren<MeshRenderer>().Select(c => {
-       return Math.Abs(_selfBody.transform.position.y - c.bounds.min.y);}).Max(); 
+    return _selfBody.GetComponentsInChildren<MeshRenderer>()
+        .Select(c => {
+          return Math.Abs(_selfBody.transform.position.y - c.bounds.min.y);
+        })
+        .Max();
   }
 
   public void SetToGround() {
