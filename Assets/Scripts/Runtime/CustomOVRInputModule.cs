@@ -16,6 +16,10 @@ public class CustomOVRInputModule : OVRInputModule {
     var leftData = mouseState.GetButtonState(PointerEventData.InputButton.Left)
                        .eventData.buttonData;
     leftData.scrollDelta = GetDominantHandScrollDelta();
+    var rightData =
+        mouseState.GetButtonState(PointerEventData.InputButton.Right)
+            .eventData.buttonData;
+    rightData.scrollDelta = GetNonDominantHandScrollDelta();
     return mouseState;
   }
 
@@ -25,6 +29,22 @@ public class CustomOVRInputModule : OVRInputModule {
                                    OVRInput.Axis2D.PrimaryThumbstick),
                                OVRInput.Controller.RTouch => OVRInput.Get(
                                    OVRInput.Axis2D.SecondaryThumbstick),
+                               _ => new Vector2() };
+
+    if (Mathf.Abs(scrollDelta.x) < rightStickDeadZone)
+      scrollDelta.x = 0;
+    if (Mathf.Abs(scrollDelta.y) < rightStickDeadZone)
+      scrollDelta.y = 0;
+
+    return scrollDelta;
+  }
+
+  private Vector2 GetNonDominantHandScrollDelta() {
+    var scrollDelta =
+        _dominantHand switch { OVRInput.Controller.LTouch => OVRInput.Get(
+                                   OVRInput.Axis2D.SecondaryThumbstick),
+                               OVRInput.Controller.RTouch => OVRInput.Get(
+                                   OVRInput.Axis2D.PrimaryThumbstick),
                                _ => new Vector2() };
 
     if (Mathf.Abs(scrollDelta.x) < rightStickDeadZone)

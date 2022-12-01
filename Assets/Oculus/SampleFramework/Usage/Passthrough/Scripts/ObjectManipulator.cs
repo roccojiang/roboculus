@@ -14,12 +14,17 @@ public class ObjectManipulator : MonoBehaviour {
   public static event Action<OVRInput.Controller> DominantHandChanged;
 
   GameObject hoverObject = null;
+
   GameObject grabObject = null;
+
   // all-purpose timer to use for blending after object is grabbed/released
   float grabTime = 0.0f;
+
   // the grabbed object's transform relative to the controller
   Vector3 localGrabOffset = Vector3.zero;
+
   Quaternion localGrabRotation = Quaternion.identity;
+
   // the camera and grabbing hand's world position when grabbing
   Vector3 camGrabPosition = Vector3.zero;
   Quaternion camGrabRotation = Quaternion.identity;
@@ -48,6 +53,7 @@ public class ObjectManipulator : MonoBehaviour {
       passthrough.colorMapEditorBrightness = -1;
       passthrough.colorMapEditorContrast = -1;
     }
+
     StartCoroutine(StartDemo());
     // render these UI elements after the passthrough "hole punch" shader and
     // the brush ring
@@ -63,12 +69,13 @@ public class ObjectManipulator : MonoBehaviour {
     Vector3 controllerPos = OVRInput.GetLocalControllerPosition(Controller);
     Quaternion controllerRot = OVRInput.GetLocalControllerRotation(Controller);
     CheckForDominantHand(); // switches controller hand (if trigger used on a
-                            // different hand)
+    // different hand)
 
     FindHoverObject(controllerPos, controllerRot);
 
     if (hoverObject) {
-      if (OVRInput.GetDown(OVRInput.Button.PrimaryHandTrigger, Controller)) {
+      if (OVRInput.GetDown(OVRInput.Button.PrimaryHandTrigger, Controller) ||
+          OVRInput.GetDown(OVRInput.Button.PrimaryIndexTrigger, Controller)) {
         // grabbing
         grabObject = hoverObject;
         GrabHoverObject(grabObject, controllerPos, controllerRot);
@@ -104,6 +111,7 @@ public class ObjectManipulator : MonoBehaviour {
           grabObject.transform.rotation;
       AssignInstructions(grabObject.GetComponent<GrabObject>());
     }
+
     handGrabPosition = controllerPos;
     handGrabRotation = controllerRot;
     camGrabPosition = Camera.main.transform.position;
@@ -119,8 +127,16 @@ public class ObjectManipulator : MonoBehaviour {
             handGrabPosition + handGrabRotation * localGrabOffset;
         grabObject.transform.rotation = handGrabRotation * localGrabRotation;
       }
+
       grabObject.GetComponent<GrabObject>().Release();
     }
+
+    RobotControl control = grabObject.GetComponent<RobotControl>();
+    if (control != null) {
+      // Make it manipulatable again.
+      control.Manipulatable = true;
+    }
+
     grabObject = null;
   }
 
@@ -138,8 +154,10 @@ public class ObjectManipulator : MonoBehaviour {
             Mathf.Lerp(-1.0f, 0.0f, normTimer);
         passthrough.colorMapEditorContrast = Mathf.Lerp(-1.0f, 0.0f, normTimer);
       }
+
       yield return null;
     }
+
     // yield return new WaitForSeconds(1.0f);
     demoObjects.SetActive(true);
     Vector3 objFwd = new Vector3(Camera.main.transform.forward.x, 0,
@@ -294,6 +312,7 @@ public class ObjectManipulator : MonoBehaviour {
           rotationOffset -= thumbstick.x;
           ClampGrabOffset(ref localGrabOffset, thumbstick.y);
         }
+
         Vector3 newFwd =
             obj.GetComponent<GrabObject>().grabbedRotation * Vector3.forward;
         newFwd = new Vector3(newFwd.x, 0, newFwd.z);
@@ -310,6 +329,7 @@ public class ObjectManipulator : MonoBehaviour {
           rotationOffset -= thumbstick.x;
           ClampGrabOffset(ref localGrabOffset, thumbstick.y);
         }
+
         Vector3 newUp =
             obj.GetComponent<GrabObject>().grabbedRotation * Vector3.up;
         newUp = new Vector3(newUp.x, 0, newUp.z);
@@ -339,13 +359,23 @@ public class ObjectManipulator : MonoBehaviour {
 
       RobotControl control = obj.transform.GetComponentInParent<RobotControl>();
 
-      // TODO: new controls
       if (control != null) {
-        new_pos.y = obj.transform.position.y;
+        // Make this uncontrollable with thumbstick.
+        control.Manipulatable = false;
+
+        // Lock axes if respective triggers not pressed.
+        Vector3 position = obj.transform.position;
+        if (OVRInput.GetDown(OVRInput.Button.PrimaryIndexTrigger, Controller))
+          new_pos.y = position.y;
+        if (OVRInput.GetDown(OVRInput.Button.PrimaryHandTrigger, Controller)) {
+          new_pos.x = position.x;
+          new_pos.z = position.z;
+        }
 
         control.SetStartPosition(new_pos);
         control.SetStartRotation(new_rotation);
       }
+
       obj.transform.GetComponent<ArticulationBody>().TeleportRoot(new_pos,
                                                                   new_rotation);
 
@@ -376,6 +406,7 @@ public class ObjectManipulator : MonoBehaviour {
     if (hoverObject || grabObject) {
       return;
     }
+
     if (Controller == OVRInput.Controller.RTouch) {
       if (OVRInput.Get(OVRInput.RawButton.LHandTrigger) ||
           OVRInput.Get(OVRInput.RawButton.LIndexTrigger)) {
@@ -387,6 +418,7 @@ public class ObjectManipulator : MonoBehaviour {
         Controller = OVRInput.Controller.RTouch;
       }
     }
+
     DominantHandChanged?.Invoke(Controller);
   }
 
@@ -394,6 +426,7 @@ public class ObjectManipulator : MonoBehaviour {
     if (objectNameLabel) {
       objectNameLabel.text = targetObject.ObjectName;
     }
+
     if (objectInstructionsLabel) {
       if (grabObject) {
         objectInstructionsLabel.text = targetObject.ObjectInstructions;

@@ -24,8 +24,12 @@ public class RobotControl : MonoBehaviour {
   private Quaternion _startingRotation = Quaternion.identity;
   private Renderer[] _renderers;
   private const float DeadZone = 0.15f;
+  private float _heldTime = 0.0f;
+  private StickAxes _stickAxes = StickAxes.Vertical;
+  private LineRenderer _laserPointer;
 
   public bool Grabbable { get; set; } = true;
+  public bool Manipulatable { get; set; } = true;
 
   void Start() {
     // Get own ArticulationBody.
@@ -47,6 +51,10 @@ public class RobotControl : MonoBehaviour {
         m.renderQueue = (int)RenderQueue.Transparent;
       }
     }
+
+    // Grab a reference to an ObjectManipulator's laser.
+    _laserPointer =
+        GameObject.Find("ObjectManipulator")?.GetComponent<LineRenderer>();
 
     // Set up chain.
     ArticulationBody[] chain = GetComponentsInChildren<ArticulationBody>();
@@ -84,6 +92,9 @@ public class RobotControl : MonoBehaviour {
   }
 
   private void HandleOpacityInputs() {
+    if (!Manipulatable)
+      return;
+
     // Get the thumbstick axes for the secondary controller.
     Vector2 secondThumbS = OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick);
     float vert = secondThumbS.y;
@@ -99,16 +110,62 @@ public class RobotControl : MonoBehaviour {
     }
   }
 
-  private void HandleRobotHeight() {
+  private void HandleThumbstickClick() {
+    if (!Manipulatable) {
+      _heldTime = 0.0f;
+      return;
+    }
+
+    if (OVRInput.GetDown(OVRInput.Button.PrimaryThumbstick) ||
+        OVRInput.GetDown(OVRInput.Button.SecondaryThumbstick)) {
+      _heldTime += Time.fixedDeltaTime;
+      return;
+    }
+
     if (OVRInput.GetUp(OVRInput.Button.PrimaryThumbstick) ||
         OVRInput.GetUp(OVRInput.Button.SecondaryThumbstick)) {
-      SetToGround();
+      if (_heldTime > 1f)
+        SetToGround();
+      else
+        SwitchStickAxes();
+      _heldTime = 0.0f;
     }
+  }
+
+  private void HandleThumbstickMovement() {
+    if (!Manipulatable)
+      return;
+
+    // Get inputs.
+    Vector2 secondThumbS = OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick);
+    if (secondThumbS.x < DeadZone)
+      secondThumbS.x = 0;
+    if (secondThumbS.y < DeadZone)
+      secondThumbS.y = 0;
+
+    Vector3 currentPos = _selfBody.transform.position;
+    Quaternion currentRot = _selfBody.transform.rotation;
+
+    // Move accordingly.
+    switch (_stickAxes) {
+    case StickAxes.Lateral:
+      currentPos.x += secondThumbS.x * 0.5f;
+      currentPos.z += secondThumbS.y * 0.5f;
+      break;
+    case StickAxes.Vertical:
+      currentPos.y += secondThumbS.y * 0.5f;
+      break;
+    default:
+      throw new ArgumentOutOfRangeException();
+    }
+
+    _selfBody.TeleportRoot(currentPos, currentRot);
   }
 
   void FixedUpdate() {
     HandleOpacityInputs();
-    HandleRobotHeight();
+    HandleThumbstickClick();
+    HandleThumbstickMovement();
 
     if (!runSimulationFile || !_robotStates.MoveNext())
       return;
@@ -126,7 +183,7 @@ public class RobotControl : MonoBehaviour {
     _startingRotation = newRotation;
   }
 
-  public float GetRobotHeight() {
+  private float GetRobotHeight() {
     return _selfBody.GetComponentsInChildren<MeshRenderer>()
         .Select(c => {
           return Math.Abs(_selfBody.transform.position.y - c.bounds.min.y);
@@ -134,10 +191,34 @@ public class RobotControl : MonoBehaviour {
         .Max();
   }
 
-  public void SetToGround() {
-    Vector3 robotPos = _selfBody.transform.position;
+  private void SetToGround() {
+    Transform transform1 = _selfBody.transform;
+    Vector3 robotPos = transform1.position;
+    Quaternion robotRot = transform1.rotation;
+
     robotPos.y = GetRobotHeight();
-    _selfBody.TeleportRoot(robotPos, Quaternion.identity);
+    _selfBody.TeleportRoot(robotPos, robotRot);
+  }
+
+  private void SwitchStickAxes() {
+    switch (_stickAxes) {
+    case StickAxes.Lateral:
+      _stickAxes = StickAxes.Vertical;
+      if (_laserPointer != null) {
+        _laserPointer.startColor = Color.green;
+        _laserPointer.endColor = Color.green;
+      }
+      break;
+    case StickAxes.Vertical:
+      _stickAxes = StickAxes.Lateral;
+      if (_laserPointer != null) {
+        _laserPointer.startColor = Color.red;
+        _laserPointer.endColor = Color.blue;
+      }
+      break;
+    default:
+      throw new ArgumentOutOfRangeException();
+    }
   }
 
   public void SetState(RobotState nextPose) {
