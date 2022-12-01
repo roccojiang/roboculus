@@ -32,7 +32,6 @@ public class RuntimeUrdfImporter : MonoBehaviour {
   public bool clearOnLoad = false;
 
   public string immovableLinkName = "base_link";
-  public LineRenderer laser = null;
   public GameObject currentRobot = null;
 
   public static event Action<GameObject, string> RuntimeRobotImported;
@@ -99,7 +98,6 @@ public class RuntimeUrdfImporter : MonoBehaviour {
 
     RobotControl control = robot.AddComponent<RobotControl>();
     control.jointCount = jointCount;
-    control.laser = laser;
 
     Server oldServer = currentRobot.GetComponent<Server>();
     Server newServer = robot.AddComponent<Server>();

@@ -343,7 +343,22 @@ public class ObjectManipulator : MonoBehaviour {
       RobotControl control = obj.transform.GetComponentInParent<RobotControl>();
 
       if (control != null) {
-        newPosition.y = oldPosition.y;
+        // Both triggers: free X/Y/Z axes movement
+        if (OVRInput.Get(OVRInput.Button.PrimaryHandTrigger, Controller) &&
+            OVRInput.Get(OVRInput.Button.PrimaryIndexTrigger, Controller)) {
+
+        }
+        // Side trigger: X/Z axes movement
+        else if (OVRInput.Get(OVRInput.Button.PrimaryHandTrigger, Controller)) {
+          newPosition.y = oldPosition.y;
+        }
+        // Front trigger: Y axis movement
+        else if (OVRInput.Get(OVRInput.Button.PrimaryIndexTrigger,
+                              Controller)) {
+          newPosition.x = oldPosition.x;
+          newPosition.z = oldPosition.z;
+        }
+
         control.SetStartPosition(newPosition);
         control.SetStartRotation(newRotation);
       }

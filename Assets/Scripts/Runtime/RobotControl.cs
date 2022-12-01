@@ -18,13 +18,14 @@ public class RobotControl : MonoBehaviour {
   public float damping;
   public float forceLimit = float.MaxValue;
   public bool runSimulationFile;
-  public LineRenderer laser;
 
   private Vector3 _startingPosition = Vector3.zero;
   private float _yCorrection = 0.0f;
   private Quaternion _startingRotation = Quaternion.identity;
   private Renderer[] _renderers;
-  private const float DeadZone = 0.15f;
+
+  public float deadZone = 0.15f;
+  public float heightMultiplier = 0.0025f;
 
   public bool Grabbable { get; set; } = true;
 
@@ -91,7 +92,7 @@ public class RobotControl : MonoBehaviour {
 
     // If the controls are within a thumbstick dead-zone, don't change the
     // opacity.
-    if (Mathf.Abs(vert) < DeadZone)
+    if (Mathf.Abs(vert) < deadZone)
       return;
 
     // Modify the opacities here.
@@ -101,20 +102,21 @@ public class RobotControl : MonoBehaviour {
   }
 
   private void HandleRobotHeight() {
-    OVRInput.Controller Controller = OVRInput.Controller.RTouch;
+    OVRInput.Controller controller = OVRInput.Controller.RTouch;
     Vector2 thumbstick =
-        OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick, Controller);
-    if (OVRInput.Get(OVRInput.Button.SecondaryIndexTrigger)) {
+        OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick, controller);
+
+    // Height-adjust mode, no triggers held
+    // Dominant stick precisely adjusts Y-axis
+    if (!(OVRInput.Get(OVRInput.Button.PrimaryIndexTrigger, controller) ||
+          OVRInput.Get(OVRInput.Button.PrimaryHandTrigger, controller))) {
       Vector3 oldPosition = _selfBody.transform.position;
-      oldPosition.y += 0.0025f * thumbstick.y;
+      oldPosition.y += heightMultiplier * thumbstick.y;
       _selfBody.TeleportRoot(oldPosition, _selfBody.transform.rotation);
-      laser.enabled = false;
-    } else {
-      laser.enabled = true;
     }
 
-    if (OVRInput.GetUp(OVRInput.Button.PrimaryThumbstick) ||
-        OVRInput.GetUp(OVRInput.Button.SecondaryThumbstick)) {
+    // Pressing thumbstick resets robot height
+    if (OVRInput.GetUp(OVRInput.Button.PrimaryThumbstick, controller)) {
       SetToGround();
     }
   }
