@@ -28,8 +28,17 @@ public class RobotControl : MonoBehaviour {
   public float heightMultiplier = 0.0025f;
 
   public bool Grabbable { get; set; } = true;
+  private bool _objectGrabbed = false;
+
+  private OVRInput.Controller _dominantHand;
 
   void Start() {
+    ObjectManipulator.UpdateObjectGrabState += grabbed => _objectGrabbed =
+        grabbed;
+    ObjectManipulator.OnRobotGrab += ManipulateRobot;
+    ObjectManipulator.DominantHandChanged += controller => _dominantHand =
+        controller;
+
     // Get own ArticulationBody.
     _selfBody = transform.Find("base_link").GetComponent<ArticulationBody>();
 
@@ -87,7 +96,13 @@ public class RobotControl : MonoBehaviour {
 
   private void HandleOpacityInputs() {
     // Get the thumbstick axes for the secondary controller.
-    Vector2 secondThumbS = OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick);
+    OVRInput.Controller nonDominantHand =
+        _dominantHand == OVRInput.Controller.RTouch
+            ? OVRInput.Controller.LTouch
+            : OVRInput.Controller.RTouch;
+
+    Vector2 secondThumbS =
+        OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick, nonDominantHand);
     float vert = secondThumbS.y;
 
     // If the controls are within a thumbstick dead-zone, don't change the
@@ -102,23 +117,44 @@ public class RobotControl : MonoBehaviour {
   }
 
   private void HandleRobotHeight() {
-    OVRInput.Controller controller = OVRInput.Controller.RTouch;
     Vector2 thumbstick =
-        OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick, controller);
+        OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick, _dominantHand);
 
     // Height-adjust mode, no triggers held
     // Dominant stick precisely adjusts Y-axis
-    if (!(OVRInput.Get(OVRInput.Button.PrimaryIndexTrigger, controller) ||
-          OVRInput.Get(OVRInput.Button.PrimaryHandTrigger, controller))) {
+    // if (!(OVRInput.Get(OVRInput.Button.PrimaryIndexTrigger, controller) ||
+    //       OVRInput.Get(OVRInput.Button.PrimaryHandTrigger, controller))) {
+    if (!_objectGrabbed) {
       Vector3 oldPosition = _selfBody.transform.position;
       oldPosition.y += heightMultiplier * thumbstick.y;
       _selfBody.TeleportRoot(oldPosition, _selfBody.transform.rotation);
     }
 
     // Pressing thumbstick resets robot height
-    if (OVRInput.GetUp(OVRInput.Button.PrimaryThumbstick, controller)) {
+    if (OVRInput.GetUp(OVRInput.Button.PrimaryThumbstick, _dominantHand)) {
       SetToGround();
     }
+  }
+
+  private Vector3 ManipulateRobot(Vector3 oldPosition, Vector3 newPosition) {
+    // Both triggers: free X/Y/Z axes movement
+    if (OVRInput.Get(OVRInput.Button.PrimaryHandTrigger, _dominantHand) &&
+        OVRInput.Get(OVRInput.Button.PrimaryIndexTrigger, _dominantHand)) {
+      print("[***] both triggers");
+    }
+    // Side trigger: X/Z axes movement
+    else if (OVRInput.Get(OVRInput.Button.PrimaryHandTrigger, _dominantHand)) {
+      newPosition.y = oldPosition.y;
+      print("[***] side trigger");
+    }
+    // Front trigger: Y axis movement
+    else if (OVRInput.Get(OVRInput.Button.PrimaryIndexTrigger, _dominantHand)) {
+      print("[***] front trigger");
+      newPosition.x = oldPosition.x;
+      newPosition.z = oldPosition.z;
+    }
+
+    return newPosition;
   }
 
   void FixedUpdate() {
@@ -132,12 +168,12 @@ public class RobotControl : MonoBehaviour {
     }
   }
 
-  public void SetStartPosition(Vector3 newPosition) {
-    _startingPosition = newPosition;
+  public void SetStartPosition() {
+    _startingPosition = _selfBody.transform.position;
   }
 
-  public void SetStartRotation(Quaternion newRotation) {
-    _startingRotation = newRotation;
+  public void SetStartRotation() {
+    _startingRotation = _selfBody.transform.rotation;
   }
 
   public float GetRobotHeight() {

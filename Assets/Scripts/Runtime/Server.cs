@@ -45,6 +45,9 @@ public class Server : MonoBehaviour {
   void FixedUpdate() {
     if (OVRInput.GetUp(OVRInput.Button.One)) {
       Respond();
+
+      _control.SetStartPosition();
+      _control.SetStartRotation();
     }
 
     if (_threadException.TryDequeue(out Exception exc)) {
