@@ -89,7 +89,8 @@ public class ObjectManipulator : MonoBehaviour {
       grabTime = Mathf.Clamp01(grabTime);
       ManipulateObject(grabObject, controllerPos, controllerRot);
 
-      if (!OVRInput.Get(OVRInput.Button.PrimaryHandTrigger, Controller)) {
+      if (!OVRInput.Get(OVRInput.Button.PrimaryHandTrigger, Controller) &&
+          !OVRInput.Get(OVRInput.Button.PrimaryIndexTrigger, Controller)) {
         ReleaseObject();
       }
     } else {

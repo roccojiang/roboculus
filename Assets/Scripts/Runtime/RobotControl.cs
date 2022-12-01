@@ -111,7 +111,7 @@ public class RobotControl : MonoBehaviour {
   }
 
   private void HandleThumbstickClick() {
-    if (!Manipulatable) {
+    if (!Grabbable || !Manipulatable) {
       _heldTime = 0.0f;
       return;
     }
@@ -133,18 +133,19 @@ public class RobotControl : MonoBehaviour {
   }
 
   private void HandleThumbstickMovement() {
-    if (!Manipulatable)
+    if (!Grabbable || !Manipulatable)
       return;
 
     // Get inputs.
     Vector2 secondThumbS = OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick);
-    if (secondThumbS.x < DeadZone)
+    if (Mathf.Abs(secondThumbS.x) < DeadZone)
       secondThumbS.x = 0;
-    if (secondThumbS.y < DeadZone)
+    if (Mathf.Abs(secondThumbS.y) < DeadZone)
       secondThumbS.y = 0;
 
-    Vector3 currentPos = _selfBody.transform.position;
-    Quaternion currentRot = _selfBody.transform.rotation;
+    Transform transform1 = _selfBody.transform;
+    Vector3 currentPos = transform1.position;
+    Quaternion currentRot = transform1.rotation;
 
     // Move accordingly.
     switch (_stickAxes) {
@@ -205,16 +206,28 @@ public class RobotControl : MonoBehaviour {
     case StickAxes.Lateral:
       _stickAxes = StickAxes.Vertical;
       if (_laserPointer != null) {
-        _laserPointer.startColor = Color.green;
-        _laserPointer.endColor = Color.green;
+        Gradient gradient = new();
+        gradient.SetKeys(new[] { new GradientColorKey(Color.green, 0.0f),
+                                 new GradientColorKey(Color.green, 1.0f) },
+                         new[] { new GradientAlphaKey(1.0f, 0.0f),
+                                 new GradientAlphaKey(1.0f, 1.0f) });
+
+        _laserPointer.colorGradient = gradient;
       }
+
       break;
     case StickAxes.Vertical:
       _stickAxes = StickAxes.Lateral;
       if (_laserPointer != null) {
-        _laserPointer.startColor = Color.red;
-        _laserPointer.endColor = Color.blue;
+        Gradient gradient = new();
+        gradient.SetKeys(new[] { new GradientColorKey(Color.red, 0.0f),
+                                 new GradientColorKey(Color.blue, 1.0f) },
+                         new[] { new GradientAlphaKey(1.0f, 0.0f),
+                                 new GradientAlphaKey(1.0f, 1.0f) });
+
+        _laserPointer.colorGradient = gradient;
       }
+
       break;
     default:
       throw new ArgumentOutOfRangeException();
