@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Concurrent;
 using UnityEngine;
 using System.IO;
@@ -47,6 +48,13 @@ public class MenuController : MonoBehaviour {
       transform.position =
           eventCamera.transform.position +
           (eventCamera.transform.forward * DISTANCE_FROM_CAMERA);
+      // Keep menu above ground
+      float y =
+          Math.Max(transform.position.y,
+                   transform.GetComponent<RectTransform>().sizeDelta.y / 1000);
+      transform.position =
+          new Vector3(transform.position.x, y, transform.position.z);
+
       transform.rotation = eventCamera.transform.rotation;
       // Keep menu upright
       transform.rotation =

@@ -111,6 +111,7 @@ public class UrdfServer : MonoBehaviour {
       print("SocketException: " + e);
       _threadException.Enqueue(e);
     } finally {
+      print("[+] URDF Server ending.");
       server?.Stop();
     }
   }
