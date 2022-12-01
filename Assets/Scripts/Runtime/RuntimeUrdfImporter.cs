@@ -1,5 +1,4 @@
-using System.Collections;
-using System.Collections.Generic;
+using System;
 using Runtime;
 using System.IO;
 using System.Text;
@@ -35,6 +34,8 @@ public class RuntimeUrdfImporter : MonoBehaviour {
   public string immovableLinkName = "base_link";
   public GameObject currentRobot = null;
 
+  public static event Action<GameObject, string> RuntimeRobotImported;
+
   public void LoadUrdf(string urdfFilepath) {
     Debug.Log("[+] LOAD URDF: " + urdfFilepath);
     if (string.IsNullOrEmpty(urdfFilepath)) {
@@ -67,6 +68,8 @@ public class RuntimeUrdfImporter : MonoBehaviour {
     }
 
     currentRobot = robotObject;
+    RuntimeRobotImported?.Invoke(currentRobot, immovableLinkName);
+
     Server newServer = currentRobot.GetComponent<Server>();
     newServer.StopServer();
     newServer.Start();
