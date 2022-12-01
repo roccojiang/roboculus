@@ -50,6 +50,7 @@ internal static class Utils {
     caught = e;
   }
 });
+worker.Start();
 
 // If the join was successful and no exception was caught, return the result.
 if (worker.Join(timeLimit) && caught == null) {

@@ -164,8 +164,9 @@ public class Server : MonoBehaviour {
           print("[+] Waiting for IP.");
         } while (!ReadIPAddress(_server));
 
-        TriggerPopupWindow?.Invoke(
-            "Client connected. Please press 'A' to start streaming simulated movement data.");
+        // TriggerPopupWindow?.Invoke(
+        //     "Client connected. Please press 'A' to start streaming simulated
+        //     movement data.");
 
         // The second connection that receives the states.
         ReceiveStates(_server);
