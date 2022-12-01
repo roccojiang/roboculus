@@ -333,21 +333,31 @@ public class ObjectManipulator : MonoBehaviour {
     }
 
     if (useDefaultManipulation) {
-      Vector3 new_pos = controllerPos + controllerRot * localGrabOffset;
-      Quaternion new_rotation =
+      Vector3 oldPosition = obj.transform.position;
+      Quaternion oldRotation = obj.transform.rotation;
+      Vector3 newPosition = controllerPos + controllerRot * localGrabOffset;
+
+      Quaternion newRotation =
           obj.transform.rotation * Quaternion.Euler(Vector3.up * -thumbstick.x);
 
       RobotControl control = obj.transform.GetComponentInParent<RobotControl>();
 
       // TODO: new controls
       if (control != null) {
-        new_pos.y = obj.transform.position.y;
+        if (OVRInput.Get(OVRInput.Button.SecondaryIndexTrigger)) {
+          laser.enabled = false;
+          oldPosition.y += 0.0025f * thumbstick.y;
+          newRotation = oldRotation;
+          newPosition = oldPosition;
+        } else {
+          newPosition.y = oldPosition.y;
+        }
 
-        control.SetStartPosition(new_pos);
-        control.SetStartRotation(new_rotation);
+        control.SetStartPosition(newPosition);
+        control.SetStartRotation(newRotation);
       }
-      obj.transform.GetComponent<ArticulationBody>().TeleportRoot(new_pos,
-                                                                  new_rotation);
+      obj.transform.GetComponent<ArticulationBody>().TeleportRoot(newPosition,
+                                                                  newRotation);
 
       ClampGrabOffset(ref localGrabOffset, thumbstick.y);
     }
