@@ -18,6 +18,7 @@ public class RobotControl : MonoBehaviour {
   public float damping;
   public float forceLimit = float.MaxValue;
   public bool runSimulationFile;
+  public LineRenderer laser;
 
   private Vector3 _startingPosition = Vector3.zero;
   private float _yCorrection = 0.0f;
@@ -100,6 +101,18 @@ public class RobotControl : MonoBehaviour {
   }
 
   private void HandleRobotHeight() {
+    OVRInput.Controller Controller = OVRInput.Controller.RTouch;
+    Vector2 thumbstick =
+        OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick, Controller);
+    if (OVRInput.Get(OVRInput.Button.SecondaryIndexTrigger)) {
+      Vector3 oldPosition = _selfBody.transform.position;
+      oldPosition.y += 0.0025f * thumbstick.y;
+      _selfBody.TeleportRoot(oldPosition, _selfBody.transform.rotation);
+      laser.enabled = false;
+    } else {
+      laser.enabled = true;
+    }
+
     if (OVRInput.GetUp(OVRInput.Button.PrimaryThumbstick) ||
         OVRInput.GetUp(OVRInput.Button.SecondaryThumbstick)) {
       SetToGround();
@@ -107,15 +120,14 @@ public class RobotControl : MonoBehaviour {
   }
 
   void FixedUpdate() {
-    HandleOpacityInputs();
-    HandleRobotHeight();
-
-    if (!runSimulationFile || !_robotStates.MoveNext())
-      return;
-
-    // Get next pose from sim parser.
-    RobotState nextPose = _robotStates.Current;
-    SetState(nextPose);
+    if (runSimulationFile && _robotStates.MoveNext()) {
+      // Get next pose from sim parser.
+      RobotState nextPose = _robotStates.Current;
+      SetState(nextPose);
+    } else {
+      HandleOpacityInputs();
+      HandleRobotHeight();
+    }
   }
 
   public void SetStartPosition(Vector3 newPosition) {

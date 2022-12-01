@@ -4700,6 +4700,7 @@ MonoBehaviour:
   showProgress: 0
   clearOnLoad: 1
   immovableLinkName: base_link
+  laser: {fileID: 1285069864}
   currentRobot: {fileID: 1584163103}
 --- !u!1 &988213381
 GameObject:
@@ -8642,6 +8643,7 @@ MonoBehaviour:
   damping: 0
   forceLimit: 3.4028235e+38
   runSimulationFile: 0
+  laser: {fileID: 1285069864}
 --- !u!114 &1584163108
 MonoBehaviour:
   m_ObjectHideFlags: 0

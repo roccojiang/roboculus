@@ -26,7 +26,6 @@ public class ObjectManipulator : MonoBehaviour {
   Vector3 handGrabPosition = Vector3.zero;
   Quaternion handGrabRotation = Quaternion.identity;
   Vector3 cursorPosition = Vector3.zero;
-  bool isBeingHeightAdjusted = false;
   float rotationOffset = 0.0f;
   public LineRenderer laser;
   public Transform objectInfo;
@@ -237,7 +236,7 @@ public class ObjectManipulator : MonoBehaviour {
           controllerPos + controllerRot * (Vector3.forward * rayDistance);
       laser.SetPosition(0, pos1);
       laser.SetPosition(1, cursorPosition);
-      laser.enabled = (showLaser);
+      laser.enabled = showLaser;
       if (grabObject && grabObject.GetComponent<GrabObject>()) {
         grabObject.GetComponent<GrabObject>().CursorPos(cursorPosition);
       }
@@ -343,29 +342,13 @@ public class ObjectManipulator : MonoBehaviour {
 
       RobotControl control = obj.transform.GetComponentInParent<RobotControl>();
 
-      // TODO: new controls
       if (control != null) {
-        if (OVRInput.Get(OVRInput.Button.SecondaryIndexTrigger) ||
-            isBeingHeightAdjusted) {
-          laser.enabled = false;
-          oldPosition.y += 0.0025f * thumbstick.y;
-          newRotation = oldRotation;
-          newPosition = oldPosition;
-          isBeingHeightAdjusted = true;
-        } else {
-          newPosition.y = oldPosition.y;
-        }
-
+        newPosition.y = oldPosition.y;
         control.SetStartPosition(newPosition);
         control.SetStartRotation(newRotation);
       }
       obj.transform.GetComponent<ArticulationBody>().TeleportRoot(newPosition,
                                                                   newRotation);
-
-      if (OVRInput.GetUp(OVRInput.Button.SecondaryHandTrigger)) {
-        isBeingHeightAdjusted = false;
-      }
-
       ClampGrabOffset(ref localGrabOffset, thumbstick.y);
     }
   }
