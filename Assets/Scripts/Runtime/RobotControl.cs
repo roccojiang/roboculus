@@ -4,6 +4,7 @@ using System.Linq;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Rendering;
+using System;
 
 namespace Runtime {
 public class RobotControl : MonoBehaviour {
@@ -98,8 +99,16 @@ public class RobotControl : MonoBehaviour {
     }
   }
 
+  private void HandleRobotHeight() {
+    if (OVRInput.GetUp(OVRInput.Button.PrimaryThumbstick) ||
+        OVRInput.GetUp(OVRInput.Button.SecondaryThumbstick)) {
+      SetToGround();
+    }
+  }
+
   void FixedUpdate() {
     HandleOpacityInputs();
+    HandleRobotHeight();
 
     if (!runSimulationFile || !_robotStates.MoveNext())
       return;
@@ -115,6 +124,20 @@ public class RobotControl : MonoBehaviour {
 
   public void SetStartRotation(Quaternion newRotation) {
     _startingRotation = newRotation;
+  }
+
+  public float GetRobotHeight() {
+    return _selfBody.GetComponentsInChildren<MeshRenderer>()
+        .Select(c => {
+          return Math.Abs(_selfBody.transform.position.y - c.bounds.min.y);
+        })
+        .Max();
+  }
+
+  public void SetToGround() {
+    Vector3 robotPos = _selfBody.transform.position;
+    robotPos.y = GetRobotHeight();
+    _selfBody.TeleportRoot(robotPos, Quaternion.identity);
   }
 
   public void SetState(RobotState nextPose) {
