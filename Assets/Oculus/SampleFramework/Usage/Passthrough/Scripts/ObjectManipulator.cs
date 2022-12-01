@@ -41,6 +41,9 @@ public class ObjectManipulator : MonoBehaviour {
   public OVRPassthroughLayer passthrough;
 
   private void Start() {
+    RuntimeUrdfImporter.RuntimeRobotImported += (importedRobot, linkName) =>
+        robot = importedRobot.transform.Find(linkName).gameObject;
+
     if (passthrough) {
       passthrough.colorMapEditorBrightness = -1;
       passthrough.colorMapEditorContrast = -1;
