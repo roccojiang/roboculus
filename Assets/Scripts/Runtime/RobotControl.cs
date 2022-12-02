@@ -23,11 +23,22 @@ public class RobotControl : MonoBehaviour {
   private float _yCorrection = 0.0f;
   private Quaternion _startingRotation = Quaternion.identity;
   private Renderer[] _renderers;
-  private const float DeadZone = 0.15f;
+
+  public float deadZone = 0.15f;
+  public float heightMultiplier = 0.0025f;
 
   public bool Grabbable { get; set; } = true;
+  private bool _objectGrabbed = false;
+
+  private OVRInput.Controller _dominantHand;
 
   void Start() {
+    ObjectManipulator.UpdateObjectGrabState += grabbed => _objectGrabbed =
+        grabbed;
+    ObjectManipulator.OnRobotGrab += ManipulateRobot;
+    ObjectManipulator.DominantHandChanged += controller => _dominantHand =
+        controller;
+
     // Get own ArticulationBody.
     _selfBody = transform.Find("base_link").GetComponent<ArticulationBody>();
 
@@ -85,12 +96,18 @@ public class RobotControl : MonoBehaviour {
 
   private void HandleOpacityInputs() {
     // Get the thumbstick axes for the secondary controller.
-    Vector2 secondThumbS = OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick);
+    OVRInput.Controller nonDominantHand =
+        _dominantHand == OVRInput.Controller.RTouch
+            ? OVRInput.Controller.LTouch
+            : OVRInput.Controller.RTouch;
+
+    Vector2 secondThumbS =
+        OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick, nonDominantHand);
     float vert = secondThumbS.y;
 
     // If the controls are within a thumbstick dead-zone, don't change the
     // opacity.
-    if (Mathf.Abs(vert) < DeadZone)
+    if (Mathf.Abs(vert) < deadZone)
       return;
 
     // Modify the opacities here.
@@ -100,22 +117,56 @@ public class RobotControl : MonoBehaviour {
   }
 
   private void HandleRobotHeight() {
-    if (OVRInput.GetUp(OVRInput.Button.PrimaryThumbstick) ||
-        OVRInput.GetUp(OVRInput.Button.SecondaryThumbstick)) {
+    Vector2 thumbstick =
+        OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick, _dominantHand);
+
+    // Height-adjust mode, no triggers held
+    // Dominant stick precisely adjusts Y-axis
+    if (!_objectGrabbed) {
+      Vector3 oldPosition = _selfBody.transform.position;
+      oldPosition.y += heightMultiplier * thumbstick.y;
+      _selfBody.TeleportRoot(oldPosition, _selfBody.transform.rotation);
+    }
+
+    // Pressing thumbstick resets robot height
+    if (OVRInput.GetUp(OVRInput.Button.PrimaryThumbstick, _dominantHand)) {
       SetToGround();
     }
   }
 
+  private Vector3 ManipulateRobot(Vector3 oldPosition, Vector3 newPosition) {
+    // Both triggers: free X/Y/Z axes movement
+    if (OVRInput.Get(OVRInput.Button.PrimaryHandTrigger, _dominantHand) &&
+        OVRInput.Get(OVRInput.Button.PrimaryIndexTrigger, _dominantHand)) {
+    }
+    // Side trigger: X/Z axes movement
+    else if (OVRInput.Get(OVRInput.Button.PrimaryHandTrigger, _dominantHand)) {
+      newPosition.y = oldPosition.y;
+    }
+    // Front trigger: Y axis movement
+    else if (OVRInput.Get(OVRInput.Button.PrimaryIndexTrigger, _dominantHand)) {
+      newPosition.x = oldPosition.x;
+      newPosition.z = oldPosition.z;
+    }
+
+    return newPosition;
+  }
+
   void FixedUpdate() {
-    HandleOpacityInputs();
-    HandleRobotHeight();
+    if (runSimulationFile && _robotStates.MoveNext()) {
+      // Get next pose from sim parser, running from simulation file
+      RobotState nextPose = _robotStates.Current;
+      SetState(nextPose);
+    } else {
+      // Only allow height controls if robot is currently grabbable (i.e. not
+      // moving from streamed data)
+      if (Grabbable) {
+        HandleRobotHeight();
+        SetStartPosition(_selfBody.transform.position);
+      }
 
-    if (!runSimulationFile || !_robotStates.MoveNext())
-      return;
-
-    // Get next pose from sim parser.
-    RobotState nextPose = _robotStates.Current;
-    SetState(nextPose);
+      HandleOpacityInputs();
+    }
   }
 
   public void SetStartPosition(Vector3 newPosition) {
@@ -137,7 +188,7 @@ public class RobotControl : MonoBehaviour {
   public void SetToGround() {
     Vector3 robotPos = _selfBody.transform.position;
     robotPos.y = GetRobotHeight();
-    _selfBody.TeleportRoot(robotPos, Quaternion.identity);
+    _selfBody.TeleportRoot(robotPos, _startingRotation);
   }
 
   public void SetState(RobotState nextPose) {

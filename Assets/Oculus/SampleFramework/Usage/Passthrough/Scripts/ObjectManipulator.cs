@@ -7,11 +7,13 @@ using Runtime;
 // grabs any object that has a collider
 // adding a GrabObject script to the object offers more functionality
 public class ObjectManipulator : MonoBehaviour {
-  public OVRInput.Controller Controller {
+  public OVRInput.Controller controller {
     get; private set;
   } = OVRInput.Controller.RTouch;
 
   public static event Action<OVRInput.Controller> DominantHandChanged;
+  public static event Action<bool> UpdateObjectGrabState;
+  public static event Func<Vector3, Vector3, Vector3> OnRobotGrab;
 
   GameObject hoverObject = null;
   GameObject grabObject = null;
@@ -42,7 +44,9 @@ public class ObjectManipulator : MonoBehaviour {
 
   private void Start() {
     RuntimeUrdfImporter.RuntimeRobotImported += (importedRobot, linkName) =>
-        robot = importedRobot.transform.Find(linkName).gameObject;
+    {
+      robot = importedRobot.transform.FindChildRecursive(linkName).gameObject;
+    };
 
     if (passthrough) {
       passthrough.colorMapEditorBrightness = -1;
@@ -57,32 +61,37 @@ public class ObjectManipulator : MonoBehaviour {
       objectInstructionsLabel.font.material.renderQueue = 4600;
     if (objectInfoBG)
       objectInfoBG.materialForRendering.renderQueue = 4599;
+
+    UpdateObjectGrabState?.Invoke(false);
   }
 
   void Update() {
-    Vector3 controllerPos = OVRInput.GetLocalControllerPosition(Controller);
-    Quaternion controllerRot = OVRInput.GetLocalControllerRotation(Controller);
+    Vector3 controllerPos = OVRInput.GetLocalControllerPosition(controller);
+    Quaternion controllerRot = OVRInput.GetLocalControllerRotation(controller);
     CheckForDominantHand(); // switches controller hand (if trigger used on a
                             // different hand)
 
     FindHoverObject(controllerPos, controllerRot);
 
     if (hoverObject) {
-      if (OVRInput.GetDown(OVRInput.Button.PrimaryHandTrigger, Controller)) {
+      if (OVRInput.GetDown(OVRInput.Button.PrimaryHandTrigger, controller) ||
+          OVRInput.GetDown(OVRInput.Button.PrimaryIndexTrigger, controller)) {
         // grabbing
         grabObject = hoverObject;
+        UpdateObjectGrabState?.Invoke(true);
         GrabHoverObject(grabObject, controllerPos, controllerRot);
       }
     }
 
     if (grabObject) {
       // if grabbing then don't vibrate
-      OVRInput.SetControllerVibration(0, 0, Controller);
+      OVRInput.SetControllerVibration(0, 0, controller);
       grabTime += Time.deltaTime * 5;
       grabTime = Mathf.Clamp01(grabTime);
       ManipulateObject(grabObject, controllerPos, controllerRot);
 
-      if (!OVRInput.Get(OVRInput.Button.PrimaryHandTrigger, Controller)) {
+      if (!(OVRInput.Get(OVRInput.Button.PrimaryHandTrigger, controller) ||
+            OVRInput.Get(OVRInput.Button.PrimaryIndexTrigger, controller))) {
         ReleaseObject();
       }
     } else {
@@ -99,7 +108,7 @@ public class ObjectManipulator : MonoBehaviour {
         Quaternion.Inverse(controllerRot) * grabObject.transform.rotation;
     rotationOffset = 0.0f;
     if (grabObject.GetComponent<GrabObject>()) {
-      grabObject.GetComponent<GrabObject>().Grab(Controller);
+      grabObject.GetComponent<GrabObject>().Grab(controller);
       grabObject.GetComponent<GrabObject>().grabbedRotation =
           grabObject.transform.rotation;
       AssignInstructions(grabObject.GetComponent<GrabObject>());
@@ -122,6 +131,7 @@ public class ObjectManipulator : MonoBehaviour {
       grabObject.GetComponent<GrabObject>().Release();
     }
     grabObject = null;
+    UpdateObjectGrabState?.Invoke(false);
   }
 
   // wait for systems to get situated, then spawn the objects in front of them
@@ -169,7 +179,7 @@ public class ObjectManipulator : MonoBehaviour {
         labelPosition = hit.point;
         // OVRInput.SetControllerVibration(1, 0.01f,
         // OVRInput.Controller.RTouch);
-        StartCoroutine(ControllerPulse(0.5f, 0.01f, Controller));
+        StartCoroutine(ControllerPulse(0.5f, 0.01f, controller));
         break;
       }
 
@@ -232,11 +242,16 @@ public class ObjectManipulator : MonoBehaviour {
     if (laser) {
       laser.positionCount = 2;
       Vector3 pos1 = controllerPos + controllerRot * (Vector3.forward * 0.05f);
-      cursorPosition =
-          controllerPos + controllerRot * (Vector3.forward * rayDistance);
+      if (grabObject) {
+        // Stick laser to collider during grabbing
+        cursorPosition = robot.GetComponent<Collider>().bounds.center;
+      } else {
+        cursorPosition =
+            controllerPos + controllerRot * (Vector3.forward * rayDistance);
+      }
       laser.SetPosition(0, pos1);
       laser.SetPosition(1, cursorPosition);
-      laser.enabled = (showLaser);
+      laser.enabled = showLaser;
       if (grabObject && grabObject.GetComponent<GrabObject>()) {
         grabObject.GetComponent<GrabObject>().CursorPos(cursorPosition);
       }
@@ -248,7 +263,7 @@ public class ObjectManipulator : MonoBehaviour {
                         Quaternion controllerRot) {
     bool useDefaultManipulation = true;
     Vector2 thumbstick =
-        OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick, Controller);
+        OVRInput.Get(OVRInput.Axis2D.PrimaryThumbstick, controller);
 
     // If the object is a robot and it has been made non-grabbable, don't grab
     // it.
@@ -287,7 +302,7 @@ public class ObjectManipulator : MonoBehaviour {
       case GrabObject.ManipulationType.HorizontalScaled:
         obj.transform.position =
             controllerPos + controllerRot * localGrabOffset;
-        if (!OVRInput.Get(OVRInput.Button.PrimaryIndexTrigger, Controller)) {
+        if (!OVRInput.Get(OVRInput.Button.PrimaryIndexTrigger, controller)) {
           obj.transform.localScale =
               ClampScale(obj.transform.localScale, thumbstick);
         } else {
@@ -303,7 +318,7 @@ public class ObjectManipulator : MonoBehaviour {
       case GrabObject.ManipulationType.VerticalScaled:
         obj.transform.position =
             controllerPos + controllerRot * localGrabOffset;
-        if (!OVRInput.Get(OVRInput.Button.PrimaryIndexTrigger, Controller)) {
+        if (!OVRInput.Get(OVRInput.Button.PrimaryIndexTrigger, controller)) {
           obj.transform.localScale =
               ClampScale(obj.transform.localScale, thumbstick);
         } else {
@@ -333,22 +348,23 @@ public class ObjectManipulator : MonoBehaviour {
     }
 
     if (useDefaultManipulation) {
-      Vector3 new_pos = controllerPos + controllerRot * localGrabOffset;
-      Quaternion new_rotation =
+      Vector3 oldPosition = obj.transform.position;
+      Vector3 newPosition = controllerPos + controllerRot * localGrabOffset;
+
+      Quaternion newRotation =
           obj.transform.rotation * Quaternion.Euler(Vector3.up * -thumbstick.x);
 
       RobotControl control = obj.transform.GetComponentInParent<RobotControl>();
 
-      // TODO: new controls
       if (control != null) {
-        new_pos.y = obj.transform.position.y;
+        if (OnRobotGrab != null)
+          newPosition = OnRobotGrab(oldPosition, newPosition);
 
-        control.SetStartPosition(new_pos);
-        control.SetStartRotation(new_rotation);
+        control.SetStartPosition(newPosition);
+        control.SetStartRotation(newRotation);
       }
-      obj.transform.GetComponent<ArticulationBody>().TeleportRoot(new_pos,
-                                                                  new_rotation);
-
+      obj.transform.GetComponent<ArticulationBody>().TeleportRoot(newPosition,
+                                                                  newRotation);
       ClampGrabOffset(ref localGrabOffset, thumbstick.y);
     }
   }
@@ -376,18 +392,18 @@ public class ObjectManipulator : MonoBehaviour {
     if (hoverObject || grabObject) {
       return;
     }
-    if (Controller == OVRInput.Controller.RTouch) {
+    if (controller == OVRInput.Controller.RTouch) {
       if (OVRInput.Get(OVRInput.RawButton.LHandTrigger) ||
           OVRInput.Get(OVRInput.RawButton.LIndexTrigger)) {
-        Controller = OVRInput.Controller.LTouch;
+        controller = OVRInput.Controller.LTouch;
       }
     } else {
       if (OVRInput.Get(OVRInput.RawButton.RHandTrigger) ||
           OVRInput.Get(OVRInput.RawButton.RIndexTrigger)) {
-        Controller = OVRInput.Controller.RTouch;
+        controller = OVRInput.Controller.RTouch;
       }
     }
-    DominantHandChanged?.Invoke(Controller);
+    DominantHandChanged?.Invoke(controller);
   }
 
   void AssignInstructions(GrabObject targetObject) {

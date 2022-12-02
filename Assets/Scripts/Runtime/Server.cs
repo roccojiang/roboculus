@@ -29,14 +29,6 @@ public class Server : MonoBehaviour {
     _buffer = new ConcurrentQueue<RobotState>();
     _threadException = new ConcurrentQueue<Exception>();
 
-    if (_localAddr == "127.0.0.1") {
-      TriggerPopupWindow?.Invoke(
-          "Oculus does not seem to be connected to the Internet. Please check your connection and restart the app.");
-    } else {
-      TriggerPopupWindow?.Invoke("Oculus IP address is " + _localAddr +
-                                 ". Please connect using the Python scripts!");
-    }
-
     Thread thread = new(ServerLoop);
     thread.Start();
   }
@@ -131,8 +123,7 @@ public class Server : MonoBehaviour {
         if (!hasRead)
           continue;
 
-        RobotState st = states.Current;
-        st.IsFirst = true;
+        states.Current.IsFirst = true;
       }
 
       // XXX: See scanner for description of hack.
@@ -163,9 +154,6 @@ public class Server : MonoBehaviour {
         do {
           print("[+] Waiting for IP.");
         } while (!ReadIPAddress(_server));
-
-        TriggerPopupWindow?.Invoke(
-            "Client connected. Please press 'A' to start streaming simulated movement data.");
 
         // The second connection that receives the states.
         ReceiveStates(_server);

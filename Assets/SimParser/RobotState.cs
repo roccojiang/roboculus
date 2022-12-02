@@ -7,7 +7,7 @@ namespace SimParser {
 /// A representation of a robot's current state.
 /// </summary>
 // First assumption: all data are doubles.
-public struct RobotState {
+public class RobotState {
   public int Joints { get; private set; }
 
   public (double x, double y, double z) Position { get; private set; }

@@ -12,6 +12,7 @@ public class MenuController : MonoBehaviour {
   public GameObject urdfMenuBackground;
   public GameObject urdfMenu;
   public RuntimeUrdfImporter urdfImporter;
+  public TextMeshProUGUI menuIPLabel;
 
   public GameObject popupWindow;
   public TextMeshProUGUI popupTextField;
@@ -24,8 +25,15 @@ public class MenuController : MonoBehaviour {
 
   private const int DISTANCE_FROM_CAMERA = 3;
   private const char PATH_SEPARATOR = '/';
+  private readonly string _localAddr = Utils.GetLocalIPAddress();
 
   void Start() {
+    if (_localAddr == "127.0.0.1") {
+      menuIPLabel.text = "Connect to WiFi!";
+    } else {
+      menuIPLabel.text = "IP: " + _localAddr;
+    }
+
     UrdfServer.TriggerPopupWindow += ShowPopupWindow;
     UrdfServer.OnUrdfUpload += RefreshMenu;
     Server.TriggerPopupWindow += ShowPopupWindow;
