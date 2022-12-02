@@ -240,8 +240,13 @@ public class ObjectManipulator : MonoBehaviour {
     if (laser) {
       laser.positionCount = 2;
       Vector3 pos1 = controllerPos + controllerRot * (Vector3.forward * 0.05f);
-      cursorPosition =
-          controllerPos + controllerRot * (Vector3.forward * rayDistance);
+      if (grabObject) {
+        // Stick laser to collider during grabbing
+        cursorPosition = robot.GetComponent<Collider>().bounds.center;
+      } else {
+        cursorPosition =
+            controllerPos + controllerRot * (Vector3.forward * rayDistance);
+      }
       laser.SetPosition(0, pos1);
       laser.SetPosition(1, cursorPosition);
       laser.enabled = showLaser;
