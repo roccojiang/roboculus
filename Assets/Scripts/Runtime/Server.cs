@@ -70,7 +70,6 @@ public class Server : MonoBehaviour {
       _threadException.Enqueue(l.FromLeft());
       break;
     case Right<FormatException, RobotState> r:
-      print("[***] " + r.FromRight());
       _control.SetState(r.FromRight());
       break;
     default:

@@ -193,11 +193,8 @@ public class RobotControl : MonoBehaviour {
 
   public void SetState(RobotState nextPose) {
     // If first state, set yCorrection.
-    if (nextPose.IsFirst) {
-      print("[***] firstpos: " + nextPose.Position);
+    if (nextPose.IsFirst)
       _yCorrection = (float)nextPose.Position.z;
-      print("[***] ycorrection set to " + _yCorrection);
-    }
 
     // Update pose
     UpdatePose(nextPose.JointPositions.Select(d => (float)d).AsReadOnlyList());
@@ -225,10 +222,6 @@ public class RobotControl : MonoBehaviour {
 
     Vector3 newPosition =
         (newRotation * nextVectorPosition) + _startingPosition;
-    print("[***] ycorrection: " + _yCorrection);
-    print("[***] startpos: " + _startingPosition);
-    print("[***] rotated nextpos: " + newRotation * nextVectorPosition);
-    print("[***] newpos: " + newPosition);
 
     _selfBody.TeleportRoot(newPosition, newOrientation);
   }
