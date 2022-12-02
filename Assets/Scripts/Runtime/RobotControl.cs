@@ -187,7 +187,7 @@ public class RobotControl : MonoBehaviour {
   public void SetToGround() {
     Vector3 robotPos = _selfBody.transform.position;
     robotPos.y = GetRobotHeight();
-    _selfBody.TeleportRoot(robotPos, _startingRotation);
+    _selfBody.TeleportRoot(robotPos, _selfBody.transform.rotation);
   }
 
   public void SetState(RobotState nextPose) {
