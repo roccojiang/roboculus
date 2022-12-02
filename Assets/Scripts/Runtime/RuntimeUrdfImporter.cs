@@ -81,16 +81,18 @@ public class RuntimeUrdfImporter : MonoBehaviour {
   }
 
   void SetControllerParameters(GameObject robot, int jointCount) {
-    Transform baseNode = robot.transform.Find(immovableLinkName);
-    if (baseNode && baseNode.TryGetComponent(out ArticulationBody baseNodeAB)) {
-      baseNodeAB.immovable = true;
-      baseNodeAB.useGravity = false;
-    }
+    ArticulationBody baseNode = robot.GetComponentInChildren<ArticulationBody>();
+    if (baseNode) {
+      baseNode.immovable = true;
+      baseNode.useGravity = false;
 
-    BoxCollider grabbableCollider =
-        baseNode.gameObject.AddComponent<BoxCollider>();
-    grabbableCollider.center = Vector3.zero;
-    grabbableCollider.size = new Vector3(0.1f, 0.1f, 0.1f);
+      BoxCollider grabbableCollider =
+      baseNode.gameObject.AddComponent<BoxCollider>();
+      grabbableCollider.center = Vector3.zero;
+      grabbableCollider.size = new Vector3(0.1f, 0.1f, 0.1f);
+
+      immovableLinkName = baseNode.gameObject.name;
+    }
 
     if (robot.TryGetComponent<Controller>(out Controller controller)) {
       Destroy(controller);
@@ -107,6 +109,11 @@ public class RuntimeUrdfImporter : MonoBehaviour {
     System.Reflection.FieldInfo[] fields = type.GetFields();
     foreach (System.Reflection.FieldInfo field in fields) {
       field.SetValue(newServer, field.GetValue(oldServer));
+    }
+
+    foreach (ArticulationBody childBody in robot.GetComponentsInChildren<ArticulationBody>())
+    {
+      childBody.useGravity = false;
     }
   }
 }

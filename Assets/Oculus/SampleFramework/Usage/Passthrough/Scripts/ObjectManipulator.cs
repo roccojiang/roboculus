@@ -44,7 +44,9 @@ public class ObjectManipulator : MonoBehaviour {
 
   private void Start() {
     RuntimeUrdfImporter.RuntimeRobotImported += (importedRobot, linkName) =>
-        robot = importedRobot.transform.Find(linkName).gameObject;
+    {
+      robot = importedRobot.transform.FindChildRecursive(linkName).gameObject;
+    };
 
     if (passthrough) {
       passthrough.colorMapEditorBrightness = -1;
