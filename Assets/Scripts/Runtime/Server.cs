@@ -29,13 +29,15 @@ public class Server : MonoBehaviour {
     _buffer = new ConcurrentQueue<RobotState>();
     _threadException = new ConcurrentQueue<Exception>();
 
-    if (_localAddr == "127.0.0.1") {
-      TriggerPopupWindow?.Invoke(
-          "Oculus does not seem to be connected to the Internet. Please check your connection and restart the app.");
-    } else {
-      TriggerPopupWindow?.Invoke("Oculus IP address is " + _localAddr +
-                                 ". Please connect using the Python scripts!");
-    }
+    // if (_localAddr == "127.0.0.1") {
+    //   TriggerPopupWindow?.Invoke(
+    //       "Oculus does not seem to be connected to the Internet. Please check
+    //       your connection and restart the app.");
+    // } else {
+    //   TriggerPopupWindow?.Invoke("Oculus IP address is " + _localAddr +
+    //                              ". Please connect using the Python
+    //                              scripts!");
+    // }
 
     Thread thread = new(ServerLoop);
     thread.Start();

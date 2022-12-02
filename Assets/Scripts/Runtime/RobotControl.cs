@@ -122,8 +122,6 @@ public class RobotControl : MonoBehaviour {
 
     // Height-adjust mode, no triggers held
     // Dominant stick precisely adjusts Y-axis
-    // if (!(OVRInput.Get(OVRInput.Button.PrimaryIndexTrigger, controller) ||
-    //       OVRInput.Get(OVRInput.Button.PrimaryHandTrigger, controller))) {
     if (!_objectGrabbed) {
       Vector3 oldPosition = _selfBody.transform.position;
       oldPosition.y += heightMultiplier * thumbstick.y;
@@ -140,16 +138,13 @@ public class RobotControl : MonoBehaviour {
     // Both triggers: free X/Y/Z axes movement
     if (OVRInput.Get(OVRInput.Button.PrimaryHandTrigger, _dominantHand) &&
         OVRInput.Get(OVRInput.Button.PrimaryIndexTrigger, _dominantHand)) {
-      print("[***] both triggers");
     }
     // Side trigger: X/Z axes movement
     else if (OVRInput.Get(OVRInput.Button.PrimaryHandTrigger, _dominantHand)) {
       newPosition.y = oldPosition.y;
-      print("[***] side trigger");
     }
     // Front trigger: Y axis movement
     else if (OVRInput.Get(OVRInput.Button.PrimaryIndexTrigger, _dominantHand)) {
-      print("[***] front trigger");
       newPosition.x = oldPosition.x;
       newPosition.z = oldPosition.z;
     }
@@ -159,12 +154,16 @@ public class RobotControl : MonoBehaviour {
 
   void FixedUpdate() {
     if (runSimulationFile && _robotStates.MoveNext()) {
-      // Get next pose from sim parser.
+      // Get next pose from sim parser, running from simulation file
       RobotState nextPose = _robotStates.Current;
       SetState(nextPose);
     } else {
+      // Only allow height controls if robot is currently grabbable (i.e. not
+      // moving from streamed data)
+      if (Grabbable)
+        HandleRobotHeight();
+
       HandleOpacityInputs();
-      HandleRobotHeight();
     }
   }
 
@@ -187,6 +186,7 @@ public class RobotControl : MonoBehaviour {
   public void SetToGround() {
     Vector3 robotPos = _selfBody.transform.position;
     robotPos.y = GetRobotHeight();
+    // TODO: revert?
     _selfBody.TeleportRoot(robotPos, _selfBody.transform.rotation);
   }
 
