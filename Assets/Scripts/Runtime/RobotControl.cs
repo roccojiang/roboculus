@@ -160,19 +160,21 @@ public class RobotControl : MonoBehaviour {
     } else {
       // Only allow height controls if robot is currently grabbable (i.e. not
       // moving from streamed data)
-      if (Grabbable)
+      if (Grabbable) {
         HandleRobotHeight();
+        SetStartPosition(_selfBody.transform.position);
+      }
 
       HandleOpacityInputs();
     }
   }
 
-  public void SetStartPosition() {
-    _startingPosition = _selfBody.transform.position;
+  public void SetStartPosition(Vector3 newPosition) {
+    _startingPosition = newPosition;
   }
 
-  public void SetStartRotation() {
-    _startingRotation = _selfBody.transform.rotation;
+  public void SetStartRotation(Quaternion newRotation) {
+    _startingRotation = newRotation;
   }
 
   public float GetRobotHeight() {
@@ -186,14 +188,16 @@ public class RobotControl : MonoBehaviour {
   public void SetToGround() {
     Vector3 robotPos = _selfBody.transform.position;
     robotPos.y = GetRobotHeight();
-    // TODO: revert?
-    _selfBody.TeleportRoot(robotPos, _selfBody.transform.rotation);
+    _selfBody.TeleportRoot(robotPos, _startingRotation);
   }
 
   public void SetState(RobotState nextPose) {
     // If first state, set yCorrection.
-    if (nextPose.IsFirst)
+    if (nextPose.IsFirst) {
+      print("[***] firstpos: " + nextPose.Position);
       _yCorrection = (float)nextPose.Position.z;
+      print("[***] ycorrection set to " + _yCorrection);
+    }
 
     // Update pose
     UpdatePose(nextPose.JointPositions.Select(d => (float)d).AsReadOnlyList());
@@ -221,6 +225,10 @@ public class RobotControl : MonoBehaviour {
 
     Vector3 newPosition =
         (newRotation * nextVectorPosition) + _startingPosition;
+    print("[***] ycorrection: " + _yCorrection);
+    print("[***] startpos: " + _startingPosition);
+    print("[***] rotated nextpos: " + newRotation * nextVectorPosition);
+    print("[***] newpos: " + newPosition);
 
     _selfBody.TeleportRoot(newPosition, newOrientation);
   }

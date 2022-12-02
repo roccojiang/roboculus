@@ -47,9 +47,6 @@ public class Server : MonoBehaviour {
   void FixedUpdate() {
     if (OVRInput.GetUp(OVRInput.Button.One)) {
       Respond();
-
-      _control.SetStartPosition();
-      _control.SetStartRotation();
     }
 
     if (_threadException.TryDequeue(out Exception exc)) {
@@ -73,6 +70,7 @@ public class Server : MonoBehaviour {
       _threadException.Enqueue(l.FromLeft());
       break;
     case Right<FormatException, RobotState> r:
+      print("[***] " + r.FromRight());
       _control.SetState(r.FromRight());
       break;
     default:
@@ -136,8 +134,7 @@ public class Server : MonoBehaviour {
         if (!hasRead)
           continue;
 
-        RobotState st = states.Current;
-        st.IsFirst = true;
+        states.Current.IsFirst = true;
       }
 
       // XXX: See scanner for description of hack.

@@ -352,6 +352,9 @@ public class ObjectManipulator : MonoBehaviour {
       if (control != null) {
         if (OnRobotGrab != null)
           newPosition = OnRobotGrab(oldPosition, newPosition);
+
+        control.SetStartPosition(newPosition);
+        control.SetStartRotation(newRotation);
       }
       obj.transform.GetComponent<ArticulationBody>().TeleportRoot(newPosition,
                                                                   newRotation);
