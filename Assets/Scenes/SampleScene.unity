@@ -6235,7 +6235,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!23 &1002057162
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -6611,19 +6611,19 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: ea0bc06628d284547b820fb431d9ff0d, type: 3}
       propertyPath: m_LocalRotation.w
-      value: -3.7493994e-33
-      objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: ea0bc06628d284547b820fb431d9ff0d, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: -6.123234e-17
-      objectReference: {fileID: 0}
-    - target: {fileID: -8679921383154817045, guid: ea0bc06628d284547b820fb431d9ff0d, type: 3}
-      propertyPath: m_LocalRotation.y
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: ea0bc06628d284547b820fb431d9ff0d, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: ea0bc06628d284547b820fb431d9ff0d, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: ea0bc06628d284547b820fb431d9ff0d, type: 3}
       propertyPath: m_LocalRotation.z
-      value: 6.123234e-17
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: ea0bc06628d284547b820fb431d9ff0d, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x

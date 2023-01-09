@@ -50,11 +50,12 @@ public class Server : MonoBehaviour {
     newGadgetLocation.y = newY;
 
     // Get our robot's rotation and also apply it to the gadget.
-    Quaternion robotRotation = _control.GetRobotRotation();
+    Quaternion newRot =
+        Quaternion.Euler(0f, -90f, 0f) * _control.GetRobotRotation();
 
     // Set the new position and rotation of the gadget.
     _directionGadget.transform.position = newGadgetLocation;
-    _directionGadget.transform.rotation = robotRotation;
+    _directionGadget.transform.rotation = newRot;
   }
 
   // Update is called once per frame
@@ -75,11 +76,13 @@ public class Server : MonoBehaviour {
     // if there is data, read it
     if (!_buffer.TryDequeue(out RobotState data)) {
       _control.Grabbable = true;
+      _directionGadget.SetActive(true);
       return;
     }
 
-    // Make robot not grabbable.
+    // Make robot not grabbable, and hide the direction gadget.
     _control.Grabbable = false;
+    _directionGadget.SetActive(false);
 
     // Double-check that the data is valid, in case any joint positions are out
     // of range.
