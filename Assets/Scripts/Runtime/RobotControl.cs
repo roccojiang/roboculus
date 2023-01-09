@@ -49,7 +49,7 @@ public class RobotControl : MonoBehaviour {
     foreach (Renderer r in _renderers) {
       // """Gently coerce""" the materials to be transparent.
       foreach (Material m in r.materials) {
-        m.SetFloat("_Mode", 3f); // Pong my-[EXPLETIVE REDACTED]
+        m.SetFloat("_Mode", 3f);
         m.SetOverrideTag("RenderType", "Transparent");
         m.SetFloat("_SrcBlend", (float)BlendMode.One);
         m.SetFloat("_DstBlend", (float)BlendMode.OneMinusSrcAlpha);
@@ -188,7 +188,7 @@ public class RobotControl : MonoBehaviour {
   // run)
   public void ResetRobotState() {
     _selfBody.TeleportRoot(_startingPosition, _startingRotation);
-      UpdatePose(startJointPosition);
+    UpdatePose(startJointPosition);
   }
 
   public float GetRobotHeight() {
@@ -198,6 +198,16 @@ public class RobotControl : MonoBehaviour {
         })
         .Max();
   }
+
+  public float GetRobotTop() {
+    return _selfBody.GetComponentsInChildren<MeshRenderer>()
+        .Select(c => c.bounds.max.y)
+        .Max();
+  }
+
+  public Vector3 GetRobotLocation() { return _selfBody.transform.position; }
+
+  public Quaternion GetRobotRotation() { return _selfBody.transform.rotation; }
 
   public void SetToGround() {
     Vector3 robotPos = _selfBody.transform.position;

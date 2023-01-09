@@ -24,15 +24,37 @@ public class Server : MonoBehaviour {
   private IPAddress _responder;
   private bool _resetPosition = false;
 
+  // Direction gadget reference to show XYZ for robot when not in simulation.
+  private GameObject _directionGadget;
+
   // Start is called before the first frame update
   public void Start() {
     print("[+] Server start called");
     _control = GetComponent<RobotControl>();
     _buffer = new ConcurrentQueue<RobotState>();
     _threadException = new ConcurrentQueue<Exception>();
+    _directionGadget = GameObject.Find("XYZGadget");
 
     Thread thread = new(ServerLoop);
     thread.Start();
+  }
+
+  // Update is called as many times as possible.
+  private void Update() {
+    // Set the gadget to hover above our robot.
+    Vector3 robotLocation = _control.GetRobotLocation();
+
+    float newY = _control.GetRobotTop() + 0.05f;
+
+    Vector3 newGadgetLocation = robotLocation;
+    newGadgetLocation.y = newY;
+
+    // Get our robot's rotation and also apply it to the gadget.
+    Quaternion robotRotation = _control.GetRobotRotation();
+
+    // Set the new position and rotation of the gadget.
+    _directionGadget.transform.position = newGadgetLocation;
+    _directionGadget.transform.rotation = robotRotation;
   }
 
   // Update is called once per frame
