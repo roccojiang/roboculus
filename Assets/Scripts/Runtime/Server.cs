@@ -13,6 +13,7 @@ public class Server : MonoBehaviour {
   public int port;
 
   public static event Action<string> TriggerPopupWindow;
+  public static event Action ResetRobotState;
 
   private readonly string _localAddr = Utils.GetLocalIPAddress();
   private IEnumerator<RobotState> _states;
@@ -21,6 +22,7 @@ public class Server : MonoBehaviour {
   private RobotControl _control;
   private TcpListener _server;
   private IPAddress _responder;
+  private bool _resetPosition = false;
 
   // Start is called before the first frame update
   public void Start() {
@@ -36,7 +38,12 @@ public class Server : MonoBehaviour {
   // Update is called once per frame
   void FixedUpdate() {
     if (OVRInput.GetUp(OVRInput.Button.One)) {
-      Respond();
+      if (!_resetPosition) {
+        Respond();
+      } else {
+        ResetRobotState?.Invoke();
+      }
+      _resetPosition = !_resetPosition;
     }
 
     if (_threadException.TryDequeue(out Exception exc)) {
