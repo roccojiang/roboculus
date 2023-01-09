@@ -11,6 +11,7 @@ public class RobotControl : MonoBehaviour {
   private List<(ArticulationBody body, JointControl jc)> _articulationChain;
   private ArticulationBody _selfBody;
   private IEnumerator<RobotState> _robotStates;
+  private IList<float> startJointPosition = new List<float>();
 
   public int jointCount;
   public string simulationFilepath;
@@ -39,8 +40,9 @@ public class RobotControl : MonoBehaviour {
     ObjectManipulator.DominantHandChanged += controller => _dominantHand =
         controller;
 
+    Server.ResetRobotState += ResetRobotState;
     // Get own ArticulationBody.
-    _selfBody = transform.Find("base_link").GetComponent<ArticulationBody>();
+    _selfBody = transform.GetComponentInChildren<ArticulationBody>();
 
     // Find all the robot's renderers.
     _renderers = GetComponentsInChildren<Renderer>();
@@ -76,6 +78,11 @@ public class RobotControl : MonoBehaviour {
 
     _articulationChain =
         chain.Select(c => (c, c.GetComponent<JointControl>())).ToList();
+
+    // Set initial joint positions, so can reset it after the simulation was run
+    for (int i = 1; i < _articulationChain.Count; ++i) {
+      startJointPosition.Add(_articulationChain[i].jc.position);
+    }
 
     // Get the robot state parser.
     if (runSimulationFile) {
@@ -175,6 +182,13 @@ public class RobotControl : MonoBehaviour {
 
   public void SetStartRotation(Quaternion newRotation) {
     _startingRotation = newRotation;
+  }
+
+  // Reset the position, orientation and pose (is called after simulation is
+  // run)
+  public void ResetRobotState() {
+    _selfBody.TeleportRoot(_startingPosition, _startingRotation);
+      UpdatePose(startJointPosition);
   }
 
   public float GetRobotHeight() {
