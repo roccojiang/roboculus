@@ -22,19 +22,41 @@ public class Server : MonoBehaviour {
   private TcpListener _server;
   private IPAddress _responder;
 
+  // Direction gadget reference to show XYZ for robot when not in simulation.
+  private GameObject _directionGadget;
+
   // Start is called before the first frame update
   public void Start() {
     print("[+] Server start called");
     _control = GetComponent<RobotControl>();
     _buffer = new ConcurrentQueue<RobotState>();
     _threadException = new ConcurrentQueue<Exception>();
+    _directionGadget = GameObject.Find("XYZGadget");
 
     Thread thread = new(ServerLoop);
     thread.Start();
   }
 
-  // Update is called once per frame
-  void FixedUpdate() {
+  // Update is called as many times as possible.
+  private void Update() {
+    // Set the gadget to hover above our robot.
+    Vector3 robotLocation = _control.GetRobotLocation();
+
+    float newY = _control.GetRobotTop() + 0.05f;
+
+    Vector3 newGadgetLocation = robotLocation;
+    newGadgetLocation.y = newY;
+
+    // Get our robot's rotation and also apply it to the gadget.
+    Quaternion robotRotation = _control.GetRobotRotation();
+
+    // Set the new position and rotation of the gadget.
+    _directionGadget.transform.position = newGadgetLocation;
+    _directionGadget.transform.rotation = robotRotation;
+  }
+
+  // FixedUpdate is called once per physics engine tick.
+  private void FixedUpdate() {
     if (OVRInput.GetUp(OVRInput.Button.One)) {
       Respond();
     }
@@ -46,11 +68,13 @@ public class Server : MonoBehaviour {
     // if there is data, read it
     if (!_buffer.TryDequeue(out RobotState data)) {
       _control.Grabbable = true;
+      _directionGadget.SetActive(true);
       return;
     }
 
-    // Make robot not grabbable.
+    // Make robot not grabbable, and hide the direction gadget.
     _control.Grabbable = false;
+    _directionGadget.SetActive(false);
 
     // Double-check that the data is valid, in case any joint positions are out
     // of range.
