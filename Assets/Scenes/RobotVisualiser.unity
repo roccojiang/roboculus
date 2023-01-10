@@ -1473,7 +1473,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 6748300215575431690, guid: 4f3b4a4ae58ad484e9fc92ab68a8ffef, type: 3}
+  m_Sprite: {fileID: 4544990495591111694, guid: 4f3b4a4ae58ad484e9fc92ab68a8ffef, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -6000,7 +6000,7 @@ Transform:
   - {fileID: 321441709}
   - {fileID: 1584163106}
   m_Father: {fileID: 0}
-  m_RootOrder: 4
+  m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &968777057
 MonoBehaviour:
@@ -8607,7 +8607,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 2
+  m_RootOrder: 3
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!120 &1285069864
 LineRenderer:
@@ -9704,7 +9704,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Start Simulation
+  m_text: Start/Reset Simulation
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 5090d826c47c01b439b26b080e77fc58, type: 2}
   m_sharedMaterial: {fileID: 4425228686049637852, guid: 5090d826c47c01b439b26b080e77fc58, type: 2}
@@ -10619,7 +10619,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 4544990495591111694, guid: 4f3b4a4ae58ad484e9fc92ab68a8ffef, type: 3}
+  m_Sprite: {fileID: 6748300215575431690, guid: 4f3b4a4ae58ad484e9fc92ab68a8ffef, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
