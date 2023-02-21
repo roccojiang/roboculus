@@ -23,6 +23,7 @@ public class Server : MonoBehaviour {
   private TcpListener _server;
   private IPAddress _responder;
   private bool _resetPosition = false;
+  private int _missed_count = 0;
 
   // Direction gadget reference to show XYZ for robot when not in simulation.
   private GameObject _directionGadget;
@@ -75,10 +76,16 @@ public class Server : MonoBehaviour {
 
     // if there is data, read it
     if (!_buffer.TryDequeue(out RobotState data)) {
-      _control.Grabbable = true;
-      _directionGadget.SetActive(true);
+      _missed_count++;
+      if (_missed_count >= 100)
+      {
+        _control.Grabbable = true;
+        _directionGadget.SetActive(true);
+      }
       return;
     }
+
+    _missed_count = 0;
 
     // Make robot not grabbable, and hide the direction gadget.
     _control.Grabbable = false;
