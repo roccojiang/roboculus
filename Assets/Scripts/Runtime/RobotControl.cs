@@ -170,6 +170,7 @@ public class RobotControl : MonoBehaviour {
       if (Grabbable) {
         HandleRobotHeight();
         SetStartPosition(_selfBody.transform.position);
+        SetStartRotation(GetRobotRotation());
       }
 
       HandleOpacityInputs();
@@ -233,13 +234,14 @@ public class RobotControl : MonoBehaviour {
     (double x, double z, double y) = nextPosition;
     (double i, double k, double j) = nextRotation;
 
-    Quaternion newOrientation = Quaternion.Euler((float)i, (float)j, (float)k);
+    Quaternion newOrientation = Quaternion.Euler((float)i, (float)-j, (float)k);
 
     Quaternion newRotation =
-        Quaternion.Euler((float)i, (float)j + 90f, (float)k);
+        Quaternion.Euler((float)0, (float)-90f, (float)0);
 
     newRotation *= _startingRotation;
-    newOrientation *= _startingRotation;
+    newOrientation = _startingRotation * newOrientation;
+
 
     Vector3 nextVectorPosition =
         new((float)x, (float)y - _yCorrection, (float)z);
