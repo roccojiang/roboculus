@@ -23,6 +23,8 @@ public class MenuController : MonoBehaviour {
   private HashSet<string> _urdfs = new();
   private ConcurrentQueue<string> _urdfButtonPaths = new();
 
+  // public ConcurrentQueue<Vector3> _urdfPositions = new();
+
   private const int DISTANCE_FROM_CAMERA = 3;
   private const char PATH_SEPARATOR = '/';
   private readonly string _localAddr = Utils.GetLocalIPAddress();

@@ -62,10 +62,10 @@ public class RuntimeUrdfImporter : MonoBehaviour {
     }
 
     // clear the existing robot to avoid collision
-    if (clearOnLoad && currentRobot != null) {
-      currentRobot.SetActive(false);
-      Destroy(currentRobot);
-    }
+    // if (clearOnLoad && currentRobot != null) {
+    //   currentRobot.SetActive(false);
+    //   Destroy(currentRobot);
+    // }
 
     currentRobot = robotObject;
     RuntimeRobotImported?.Invoke(currentRobot, immovableLinkName);
@@ -92,11 +92,13 @@ public class RuntimeUrdfImporter : MonoBehaviour {
       grabbableCollider.size = new Vector3(0.1f, 0.1f, 0.1f);
 
       immovableLinkName = baseNode.gameObject.name;
+      // baseNode.gameObject.name = "BRO";  cannot do this as base_link is required to grab the object
+      baseNode.gameObject.tag = "locateme";
     }
 
-    if (robot.TryGetComponent<Controller>(out Controller controller)) {
-      Destroy(controller);
-    }
+    // if (robot.TryGetComponent<Controller>(out Controller controller)) {
+    //   Destroy(controller);
+    // }
 
     RobotControl control = robot.AddComponent<RobotControl>();
     control.jointCount = jointCount;
