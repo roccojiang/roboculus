@@ -61,11 +61,14 @@ public class RuntimeUrdfImporter : MonoBehaviour {
       Debug.Log("Successfully Loaded URDF " + robotObject.name);
     }
 
-    // clear the existing robot to avoid collision
-    // if (clearOnLoad && currentRobot != null) {
-    //   currentRobot.SetActive(false);
-    //   Destroy(currentRobot);
-    // }
+    // clear the existing robot to avoid collision (works - comment this to load multiple thing, then may have server issue)
+    if (clearOnLoad && currentRobot != null) {
+      // currentRobot.SetActive(false);
+      // Destroy(currentRobot);
+      Server server = currentRobot.GetComponent<Server>();
+      if (server != null) {Destroy(server);}
+
+    }
 
     currentRobot = robotObject;
     RuntimeRobotImported?.Invoke(currentRobot, immovableLinkName);
@@ -96,9 +99,10 @@ public class RuntimeUrdfImporter : MonoBehaviour {
       baseNode.gameObject.tag = "locateme";
     }
 
-    // if (robot.TryGetComponent<Controller>(out Controller controller)) {
-    //   Destroy(controller);
-    // }
+    // The below lines on their own do not make the script run; also needs 64-67
+    if (robot.TryGetComponent<Controller>(out Controller controller)) {
+      Destroy(controller);
+    }
 
     RobotControl control = robot.AddComponent<RobotControl>();
     control.jointCount = jointCount;
