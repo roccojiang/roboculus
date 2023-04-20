@@ -20,9 +20,9 @@ public class RobotControl : MonoBehaviour {
   public float forceLimit = float.MaxValue;
   public bool runSimulationFile;
 
-  private Vector3 _startingPosition = Vector3.zero;
+  public Vector3 _startingPosition = Vector3.zero;
   private float _yCorrection = 0.0f;
-  private Quaternion _startingRotation = Quaternion.identity;
+  public Quaternion _startingRotation = Quaternion.identity;
   private Renderer[] _renderers;
 
   public float deadZone = 0.15f;
@@ -228,29 +228,52 @@ public class RobotControl : MonoBehaviour {
     UpdateLocation(nextPose.Position, nextPose.Orientation);
   }
 
+  // private void UpdateLocation((double, double, double)nextPosition,
+  //                             (double, double, double)nextRotation) {
+  //   // Bullet uses Z for up/down. Unity uses Y for that.
+  //   (double x, double z, double y) = nextPosition;
+  //   (double i, double k, double j) = nextRotation;
+
+  //   Quaternion newOrientation = Quaternion.Euler((float)i, (float)-j, (float)k);
+
+  //   Quaternion newRotation =
+  //       Quaternion.Euler((float)0, (float)-90f, (float)0);
+
+  //   newRotation *= _startingRotation;
+  //   newOrientation = _startingRotation * newOrientation;
+
+
+  //   Vector3 nextVectorPosition =
+  //       new((float)x, (float)y - _yCorrection, (float)z);
+
+  //   Vector3 newPosition =
+  //       (newRotation * nextVectorPosition) + _startingPosition;
+  //       // nextVectorPosition;  // is in correct position, but moves wrong; if newRotation multiplication then wrong pos but moves right
+
+  //   _selfBody.TeleportRoot(newPosition, newOrientation);
+  // }
+
   private void UpdateLocation((double, double, double)nextPosition,
-                              (double, double, double)nextRotation) {
-    // Bullet uses Z for up/down. Unity uses Y for that.
-    (double x, double z, double y) = nextPosition;
-    (double i, double k, double j) = nextRotation;
+                              (double, double, double, double)nextRotation) {
+    // Unity XYZ: RIGHT/UP/FWD; ISAAC XYZ: FWD/LEFT/UP
+    (double isaac_fwd, double isaac_lft, double isaac_up) = nextPosition;
+    (double isaac_fwd_rot, double isaac_left_rot, double isaac_up_rot) = nextRotation;
+    // (double isaac_fwd_rot, double isaac_left_rot, double isaac_up_rot, double isaac_w_rot) = nextRotation;
 
-    Quaternion newOrientation = Quaternion.Euler((float)i, (float)-j, (float)k);
-
-    Quaternion newRotation =
-        Quaternion.Euler((float)0, (float)-90f, (float)0);
-
-    newRotation *= _startingRotation;
-    newOrientation = _startingRotation * newOrientation;
-
-
-    Vector3 nextVectorPosition =
-        new((float)x, (float)y - _yCorrection, (float)z);
+    // Quaternion newOrientation = Quaternion.Euler((float)isaac_fwd_rot, (float)isaac_up_rot, (float)-isaac_left_rot);
+    Quaternion newOrientation = new Quaternion(isaac_left_rot, -isaac_up_rot, -isaac_fwd_rot, isaac_w_rot);
 
     Vector3 newPosition =
-        (newRotation * nextVectorPosition) + _startingPosition;
+        new((float)-isaac_lft, (float)isaac_up - _yCorrection, (float)isaac_fwd);
+
+    // Quaternion posAdjustment =
+    //     Quaternion.Euler((float)0, (float)-90f, (float)0);
+
+    // newPosition *= posAdjustment
 
     _selfBody.TeleportRoot(newPosition, newOrientation);
   }
+
 
   private void UpdatePose(IList<float> jointPositions) {
     for (int i = 1; i < _articulationChain.Count; ++i) {

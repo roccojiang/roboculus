@@ -52,6 +52,7 @@ using UnityEngine;
 using TMPro;
 using System.Collections.Generic;
 using System.Collections;
+// using RobotControl;
 
 public class PositionGetterScript : MonoBehaviour
 {
@@ -79,6 +80,14 @@ public class PositionGetterScript : MonoBehaviour
             // Get the current position of the hero
             Vector3 heroPosition = hero.transform.position;
             Quaternion heroRotation = hero.transform.rotation;
+
+            // // Update the starting position and orientation of the hero
+            // RobotControl control = hero.GetComponent<RobotControl>();
+            // if (control != null) {
+            //     control._startingPosition = heroPosition;
+            //     control._startingRotation = heroRotation;
+            //     };
+
 
             // Add the hero's position to the text
             positionText.text += hero.transform.parent.name + ":" + heroPosition.ToString() + ":" + heroRotation.ToString() +"\n";
