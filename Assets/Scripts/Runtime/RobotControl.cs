@@ -257,11 +257,11 @@ public class RobotControl : MonoBehaviour {
                               (double, double, double, double)nextRotation) {
     // Unity XYZ: RIGHT/UP/FWD; ISAAC XYZ: FWD/LEFT/UP
     (double isaac_fwd, double isaac_lft, double isaac_up) = nextPosition;
-    (double isaac_fwd_rot, double isaac_left_rot, double isaac_up_rot) = nextRotation;
-    // (double isaac_fwd_rot, double isaac_left_rot, double isaac_up_rot, double isaac_w_rot) = nextRotation;
+    // (double isaac_fwd_rot, double isaac_left_rot, double isaac_up_rot) = nextRotation;
+    (double isaac_fwd_rot, double isaac_left_rot, double isaac_up_rot, double isaac_w_rot) = nextRotation;
 
     // Quaternion newOrientation = Quaternion.Euler((float)isaac_fwd_rot, (float)isaac_up_rot, (float)-isaac_left_rot);
-    Quaternion newOrientation = new Quaternion(isaac_left_rot, -isaac_up_rot, -isaac_fwd_rot, isaac_w_rot);
+    Quaternion newOrientation = new Quaternion((float)isaac_left_rot, (float)-isaac_up_rot, (float)-isaac_fwd_rot, (float)isaac_w_rot);
 
     Vector3 newPosition =
         new((float)-isaac_lft, (float)isaac_up - _yCorrection, (float)isaac_fwd);

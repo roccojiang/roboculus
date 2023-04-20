@@ -12,7 +12,7 @@ public class RobotState {
 
   public (double x, double y, double z) Position { get; private set; }
 
-  public (double i, double j, double k) Orientation { get; private set; }
+  public (double i, double j, double k, double w) Orientation { get; private set; }
 
   public (double lvx, double lvy, double lvz) LinearVelocity { get;
                                                                private set; }
@@ -78,19 +78,19 @@ public class RobotState {
 
       if (doubles.Count <= 0) {
         return Either<string, RobotState>.ToLeft("End of stream.");
-      } else if (doubles.Count != 12 + 2 * joints) {
-        int real = (doubles.Count - 12) / 2;
+      } else if (doubles.Count != 13 + 2 * joints) {
+        int real = (doubles.Count - 13) / 2;
         throw new FormatException(
             $"This data is for a robot with the incorrect joint count! Expected data for {joints} joints, got data for {real} joints!");
       }
 
       // Otherwise, reinitialise everything.
       state.Position = (doubles[0], doubles[1], doubles[2]);
-      state.Orientation = (doubles[3], doubles[4], doubles[5]);
-      state.LinearVelocity = (doubles[6], doubles[7], doubles[8]);
-      state.AngularVelocity = (doubles[9], doubles[10], doubles[11]);
-      state.JointPositions = doubles.GetRange(12, joints);
-      state.JointVelocities = doubles.GetRange(12 + joints, joints);
+      state.Orientation = (doubles[3], doubles[4], doubles[5], doubles[6]);
+      state.LinearVelocity = (doubles[7], doubles[8], doubles[9]);
+      state.AngularVelocity = (doubles[10], doubles[11], doubles[12]);
+      state.JointPositions = doubles.GetRange(13, joints);
+      state.JointVelocities = doubles.GetRange(13 + joints, joints);
 
       return Either<string, RobotState>.ToRight(state);
     });
