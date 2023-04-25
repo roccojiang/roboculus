@@ -5,7 +5,7 @@ import sys
 import zipfile
 import tqdm
 
-OCULUS_IP = "146.169.203.130"
+OCULUS_IP = "146.169.203.146"
 PORT = 5002
 BUFFER_SIZE = 4096
 SEPARATOR = ":"

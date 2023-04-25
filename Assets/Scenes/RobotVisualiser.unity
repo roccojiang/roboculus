@@ -6421,6 +6421,7 @@ MonoBehaviour:
   clearOnLoad: 1
   immovableLinkName: base_link
   currentRobot: {fileID: 1584163103}
+  counter: 0
 --- !u!1 &988213381
 GameObject:
   m_ObjectHideFlags: 0
@@ -12023,6 +12024,8 @@ MonoBehaviour:
   damping: 0
   forceLimit: 3.4028235e+38
   runSimulationFile: 0
+  _startingPosition: {x: 0, y: 0, z: 0}
+  _startingRotation: {x: 0, y: 0, z: 0, w: 1}
   deadZone: 0.15
   heightMultiplier: 0.0025
 --- !u!114 &1584163108

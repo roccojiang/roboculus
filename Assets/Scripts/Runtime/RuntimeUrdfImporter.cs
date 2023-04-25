@@ -75,6 +75,8 @@ public class RuntimeUrdfImporter : MonoBehaviour {
       // Destroy(currentRobot);
       Server server = currentRobot.GetComponent<Server>();
       if (server != null) {Destroy(server);}
+      currentRobot.SetActive(false);
+      Destroy(currentRobot);
 
     }
 
